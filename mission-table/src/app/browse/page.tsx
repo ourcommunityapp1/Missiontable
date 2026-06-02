@@ -21,13 +21,11 @@ export default function BrowsePage() {
     <main className="min-h-screen flex flex-col bg-cream">
       <TopNavBar />
 
-      <div className="max-w-[1280px] mx-auto w-full px-6 md:px-16 pt-16 md:pt-24 pb-24">
+      <div className="max-w-[1280px] mx-auto w-full pt-16 md:pt-24 pb-24">
 
         {/* Page header */}
-        <div className="mb-16 md:mb-20">
-          <h1
-            className="font-fraunces font-bold text-[72px] md:text-[96px] lg:text-[120px] uppercase leading-[0.9] tracking-[-0.04em] fraunces-64 text-black"
-          >
+        <div className="px-6 md:px-16 mb-16 md:mb-20">
+          <h1 className="font-fraunces font-bold text-[72px] md:text-[96px] lg:text-[120px] uppercase leading-[0.9] tracking-[-0.04em] fraunces-64 text-black">
             THE NATIONS
           </h1>
           <p className="font-inter text-warm text-base md:text-lg mt-4">
@@ -41,22 +39,24 @@ export default function BrowsePage() {
             const countries = byContinent[continent];
             return (
               <section key={continent}>
-                {/* Continent divider */}
-                <div className="border-t-2 border-black pt-4 mb-8">
+                {/* Continent divider — padded */}
+                <div className="px-6 md:px-16 border-t-2 border-black pt-4 mb-8">
                   <span className="font-inter font-semibold text-sm tracking-[0.1em] uppercase text-black">
                     {continent}
                   </span>
                 </div>
 
-                {/* Cards — 3-col desktop, snap-scroll mobile */}
-                <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 md:pb-0 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible scrollbar-hide">
+                {/* Cards — snap-scroll on mobile (full bleed), 3-col grid on desktop (padded) */}
+                <div className="md:hidden flex gap-4 overflow-x-auto snap-x snap-mandatory pl-6 pr-6 pb-2 scrollbar-hide">
                   {countries.map((country) => (
-                    <div
-                      key={country.slug}
-                      className="flex-none w-[82vw] sm:w-[52vw] md:w-auto snap-start"
-                    >
+                    <div key={country.slug} className="flex-none w-[82vw] snap-start">
                       <CountryCard country={country} />
                     </div>
+                  ))}
+                </div>
+                <div className="hidden md:grid md:grid-cols-3 md:gap-6 px-16">
+                  {countries.map((country) => (
+                    <CountryCard key={country.slug} country={country} />
                   ))}
                 </div>
               </section>
