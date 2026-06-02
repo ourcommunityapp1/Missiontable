@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-cream: #FBF9F4;
+  --color-cream-dark: #F5F3EE;
+  --color-cream-border: #EAE8E3;
+  --color-dark: #1C1B1B;
+  --color-warm: #625E53;
+  --color-muted: #858383;
+  --color-accent: #390C00;
+
+  --font-fraunces: var(--font-fraunces);
+  --font-inter: var(--font-inter);
+}
+
+body {
+  background-color: #FBF9F4;
+  color: #000000;
+}
+
+/* Fraunces optical size — responsive via CSS, since fontVariationSettings can't use Tailwind breakpoints */
+.fraunces-32 {
+  font-weight: 700;
+  font-variation-settings: "wght" 700, "opsz" 32, "SOFT" 0, "WONK" 1;
+}
+
+.fraunces-48 {
+  font-weight: 700;
+  font-variation-settings: "wght" 700, "opsz" 32, "SOFT" 0, "WONK" 1;
+}
+@media (min-width: 768px) {
+  .fraunces-48 {
+    font-variation-settings: "wght" 700, "opsz" 48, "SOFT" 0, "WONK" 1;
+  }
+}
+
+.fraunces-64 {
+  font-weight: 700;
+  font-variation-settings: "wght" 700, "opsz" 32, "SOFT" 0, "WONK" 1;
+}
+@media (min-width: 768px) {
+  .fraunces-64 {
+    font-variation-settings: "wght" 700, "opsz" 64, "SOFT" 0, "WONK" 1;
+  }
+}
