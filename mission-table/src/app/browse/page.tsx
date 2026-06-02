@@ -2,6 +2,7 @@ import TopNavBar from "@/components/TopNavBar";
 import Footer from "@/components/Footer";
 import CountryCard from "@/components/CountryCard";
 import { getCountriesByContinent, CONTINENT_ORDER } from "@/data/countries";
+import Link from "next/link";
 
 export const metadata = {
   title: "The Nations — Mission Table",
@@ -25,6 +26,13 @@ export default function BrowsePage() {
 
         {/* Page header */}
         <div className="px-6 md:px-16 mb-16 md:mb-20">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 font-inter font-semibold text-sm tracking-[0.05em] uppercase border-b-2 border-black pb-1 hover:text-warm transition-colors mb-10 md:mb-12"
+          >
+            <span aria-hidden="true">←</span>
+            Home
+          </Link>
           <h1 className="font-fraunces font-bold text-[72px] md:text-[96px] lg:text-[120px] uppercase leading-[0.9] tracking-[-0.04em] fraunces-64 text-black">
             THE NATIONS
           </h1>
