@@ -53,7 +53,7 @@ export default function BrowsePage() {
                   {countries.map((country) => (
                     <div
                       key={country.slug}
-                      className="flex-none w-[72vw] sm:w-[52vw] md:w-auto snap-start"
+                      className="flex-none w-[82vw] sm:w-[52vw] md:w-auto snap-start"
                     >
                       <CountryCard country={country} />
                     </div>

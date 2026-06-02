@@ -29,9 +29,7 @@ export default function CountryCard({ country }: { country: Country }) {
 
       {/* Footer */}
       <div className="bg-cream px-4 py-4">
-        <p
-          className="font-fraunces font-bold text-[28px] leading-tight fraunces-32 text-black"
-        >
+        <p className="font-fraunces font-bold text-[28px] leading-tight fraunces-32 text-black uppercase">
           {country.name}
         </p>
         <p className={`font-inter text-sm font-semibold mt-1 ${hasGroups ? 'text-accent' : 'text-warm'}`}>
