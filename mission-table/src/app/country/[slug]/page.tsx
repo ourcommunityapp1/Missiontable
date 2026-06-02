@@ -4,8 +4,10 @@ import Link from 'next/link';
 import TopNavBar from '@/components/TopNavBar';
 import Footer from '@/components/Footer';
 import { countries } from '@/data/countries';
-import { getGroupsForCountry } from '@/data/groups';
+import { getGroupsForCountry } from '@/lib/queries';
 import { JP_SCALE } from '@/data/jpScale';
+
+export const dynamic = 'force-dynamic';
 
 export async function generateStaticParams() {
   return countries.map((c) => ({ slug: c.slug }));
@@ -48,10 +50,10 @@ export default async function CountryPage({
   const country = countries.find((c) => c.slug === slug);
   if (!country) notFound();
 
-  const tables = getGroupsForCountry(country.slug);
+  const groups = await getGroupsForCountry(country.slug);
   const scaleInfo = JP_SCALE[country.jpScale];
   const popFormatted = formatPopulation(country.population);
-  const hasTables = tables.length > 0;
+  const hasGroups = groups.length > 0;
 
   return (
     <main className="min-h-screen flex flex-col bg-cream">
@@ -195,34 +197,34 @@ export default async function CountryPage({
                 Groups for {country.name}
               </h2>
               <p className="font-inter text-sm text-warm mt-1">
-                {hasTables
-                  ? `${tables.length} ${tables.length === 1 ? 'group' : 'groups'} praying for this nation.`
+                {hasGroups
+                  ? `${groups.length} ${groups.length === 1 ? 'group' : 'groups'} praying for this nation.`
                   : 'No groups yet.'}
               </p>
             </div>
 
-            {/* Table cards */}
-            {hasTables && (
+            {/* Group cards */}
+            {hasGroups && (
               <div className="flex flex-col gap-4 mb-6">
-                {tables.map((table) => {
-                  const isInPerson = table.groupType === 'in-person';
+                {groups.map((group) => {
+                  const isInPerson = group.groupType === 'in-person';
                   const spotsRemaining =
-                    table.maxSize != null ? table.maxSize - table.memberCount : null;
+                    group.maxSize != null ? group.maxSize - group.memberCount : null;
                   const description = isInPerson
                     ? 'Open to members who are willing to meet monthly with other families at this location.'
                     : 'Open to members everywhere. All members meet and pray at the same time in their own home.';
 
                   return (
-                    <div key={table.id} className="border-2 border-black p-5">
+                    <div key={group.id} className="border-2 border-black p-5">
                       <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-warm mb-2">
                         Hosted By
                       </p>
                       <p className="font-fraunces font-bold text-2xl fraunces-32 text-black uppercase mb-1">
-                        {table.hostedBy}
+                        {group.hostedBy}
                       </p>
-                      {isInPerson && table.city && (
+                      {isInPerson && group.city && (
                         <p className="font-inter text-sm text-warm mb-1">
-                          {table.city}{table.state ? `, ${table.state}` : ''}
+                          {group.city}{group.state ? `, ${group.state}` : ''}
                         </p>
                       )}
                       <p className="font-inter text-sm text-warm italic mb-4">{description}</p>
@@ -233,13 +235,13 @@ export default async function CountryPage({
                             <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-black mb-1">
                               Rhythm
                             </p>
-                            <p className="font-inter text-sm text-warm">{table.rhythm}</p>
+                            <p className="font-inter text-sm text-warm">{group.rhythm}</p>
                           </div>
                           <div>
                             <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-black mb-1">
                               Time
                             </p>
-                            <p className="font-inter text-sm text-warm">{table.time}</p>
+                            <p className="font-inter text-sm text-warm">{group.time}</p>
                           </div>
                         </div>
                         {isInPerson && (
@@ -248,7 +250,7 @@ export default async function CountryPage({
                               Roster
                             </p>
                             <p className="font-inter text-sm text-warm">
-                              {table.memberCount} members
+                              {group.memberCount} members
                               {spotsRemaining != null &&
                                 ` · ${spotsRemaining} spot${spotsRemaining !== 1 ? 's' : ''} remaining`}
                             </p>
@@ -257,7 +259,7 @@ export default async function CountryPage({
                       </div>
 
                       <Link
-                        href={`/join/${table.id}`}
+                        href={`/join/${group.id}`}
                         className="block w-full bg-black text-white font-inter font-semibold text-sm tracking-[0.05em] uppercase text-center py-4 border-2 border-black hover:bg-cream hover:text-black transition-colors"
                       >
                         Join This Group →

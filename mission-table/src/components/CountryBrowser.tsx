@@ -24,7 +24,7 @@ export default function CountryBrowser() {
             EVERY COUNTRY,<br />ONE HEART.
           </h2>
           <p className="font-inter text-warm text-base mb-6">
-            Explore tables forming around specific nations and join the movement where you feel called.
+            Explore groups forming around specific nations and join the movement where you feel called.
           </p>
           <Link
             href="/browse"

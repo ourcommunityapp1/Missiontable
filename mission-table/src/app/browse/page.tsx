@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export const metadata = {
   title: "The Nations — Mission Table",
-  description: "Find a country. Join a table. Pray for a year.",
+  description: "Find a country. Join a group. Pray for a year.",
 };
 
 export default function BrowsePage() {
@@ -37,7 +37,7 @@ export default function BrowsePage() {
             THE NATIONS
           </h1>
           <p className="font-inter text-warm text-base md:text-lg mt-4">
-            Find a country. Join a table. Pray for a year.
+            Find a country. Join a group. Pray for a year.
           </p>
         </div>
 

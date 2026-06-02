@@ -11,7 +11,7 @@ export default function HeroSection() {
         <div className="relative">
 
           {/* Heading */}
-          <div className="mix-blend-multiply">
+          <div className="relative z-10 mix-blend-multiply">
             <h1
               className="font-fraunces font-bold text-[72px] md:text-[120px] lg:text-[153px] uppercase leading-[0.85] tracking-[-0.05em] fraunces-32"
             >
@@ -56,7 +56,7 @@ export default function HeroSection() {
                 href="/browse"
                 className="bg-black text-white font-inter font-semibold text-sm tracking-[0.05em] uppercase px-8 py-4 border-2 border-black hover:bg-cream hover:text-black transition-colors text-center"
               >
-                BROWSE TABLES
+                BROWSE NATIONS
               </Link>
               <Link
                 href="/start"

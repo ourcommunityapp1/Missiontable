@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Figma__get_screenshot",
+      "mcp__claude_ai_Figma__get_design_context",
+      "Bash(git *)",
+      "Bash(npm run *)",
+      "Bash(gh auth *)",
+      "Bash(npx tsc *)",
+      "Bash(curl *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"const pkg = require\\('./node_modules/@supabase/supabase-js/package.json'\\); console.log\\(pkg.version\\)\")"
+    ]
+  }
+}
