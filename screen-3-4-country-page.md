@@ -57,10 +57,11 @@ Auto-generated from `groupType`:
   - Scale 5: Evangelicals > 10%
 
 ### Terminology — Always "Group", Never "Table"
-- `GROUPS FOR SPAIN`
-- `JOIN THIS GROUP →`
-- `START A GROUP →` (no country name in button)
-- `WANT TO HOST A GROUP?`
+- `GROUPS FOR SPAIN` — section heading
+- `JOIN THIS GROUP →` — button on group cards
+- `START A GROUP →` — button on "Want to Host a Group?" section (no country name)
+- `WANT TO HOST A GROUP?` — section heading (Fraunces bold uppercase)
+- Internal data file: `src/data/groups.ts`, type `Group`, function `getGroupsForCountry()`
 
 ### "Want to Host a Group?" Subtext — Backend TODO
 The subtext currently hardcodes "Be the first to start a Mission Table for [Country]."

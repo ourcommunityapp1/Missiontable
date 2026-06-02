@@ -4,7 +4,7 @@ import Link from 'next/link';
 import TopNavBar from '@/components/TopNavBar';
 import Footer from '@/components/Footer';
 import { countries } from '@/data/countries';
-import { getTablesForCountry } from '@/data/tables';
+import { getGroupsForCountry } from '@/data/groups';
 import { JP_SCALE } from '@/data/jpScale';
 
 export async function generateStaticParams() {
@@ -48,7 +48,7 @@ export default async function CountryPage({
   const country = countries.find((c) => c.slug === slug);
   if (!country) notFound();
 
-  const tables = getTablesForCountry(country.slug);
+  const tables = getGroupsForCountry(country.slug);
   const scaleInfo = JP_SCALE[country.jpScale];
   const popFormatted = formatPopulation(country.population);
   const hasTables = tables.length > 0;

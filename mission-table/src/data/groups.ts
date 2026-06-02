@@ -1,10 +1,10 @@
-export type TableType = 'in-person' | 'virtual';
+export type GroupType = 'in-person' | 'virtual';
 
-export type Table = {
+export type Group = {
   id: string;
   countrySlug: string;
   hostedBy: string;
-  groupType: TableType;
+  groupType: GroupType;
   city?: string;       // in-person only
   state?: string;      // in-person only
   rhythm: string;
@@ -13,12 +13,12 @@ export type Table = {
   maxSize?: number;    // in-person only — omit for virtual (no cap)
 };
 
-export function getTablesForCountry(slug: string): Table[] {
-  return tables.filter((t) => t.countrySlug === slug);
+export function getGroupsForCountry(slug: string): Group[] {
+  return groups.filter((g) => g.countrySlug === slug);
 }
 
-// Seeded tables — Spain has one in-person + Mission Table Global placeholder
-export const tables: Table[] = [
+// Seeded groups — Spain has one in-person + Mission Table Global placeholder
+export const groups: Group[] = [
   {
     id: 'spain-1',
     countrySlug: 'spain',
