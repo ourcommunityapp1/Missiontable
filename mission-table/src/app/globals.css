@@ -18,6 +18,15 @@ body {
   color: #000000;
 }
 
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Fraunces optical size — responsive via CSS, since fontVariationSettings can't use Tailwind breakpoints */
 .fraunces-32 {
   font-weight: 700;

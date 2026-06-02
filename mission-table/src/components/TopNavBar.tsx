@@ -19,7 +19,7 @@ export default function TopNavBar() {
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-8">
           <Link href="/browse" className="font-inter text-warm text-base hover:text-black transition-colors">
-            Join a Group
+            Browse Tables
           </Link>
           <Link href="/start" className="font-inter text-warm text-base hover:text-black transition-colors">
             Start a Group
@@ -52,7 +52,7 @@ export default function TopNavBar() {
       {menuOpen && (
         <div className="md:hidden border-t-2 border-black bg-cream px-6 py-6 flex flex-col gap-6">
           <Link href="/browse" className="font-inter text-warm text-lg" onClick={() => setMenuOpen(false)}>
-            Join a Group
+            Browse Tables
           </Link>
           <Link href="/start" className="font-inter text-warm text-lg" onClick={() => setMenuOpen(false)}>
             Start a Group
