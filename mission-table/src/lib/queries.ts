@@ -1,4 +1,71 @@
 import { supabase } from './supabase';
+import { countries } from '@/data/countries';
+
+export type FeaturedCountry = {
+  name: string;
+  slug: string;
+  region: string;
+  image: string;
+  groupCount: number;
+  bg: string;
+};
+
+const COUNTRY_BG: Record<string, string> = {
+  spain: '#E6DFD1',
+  china: '#EAE8E3',
+  guatemala: '#E4E2DD',
+  'north-korea': '#E8E4DF',
+};
+
+const FALLBACK_SLUGS = ['spain', 'china', 'guatemala'];
+
+export async function getFeaturedCountries(limit = 3): Promise<FeaturedCountry[]> {
+  const { data } = await supabase
+    .from('groups')
+    .select('country_slug')
+    .eq('status', 'active') as unknown as { data: { country_slug: string }[] | null };
+
+  // Count groups per country
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    counts[row.country_slug] = (counts[row.country_slug] ?? 0) + 1;
+  }
+
+  // Countries with at least one group, sorted by count desc
+  const withGroups = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([slug, count]) => ({ slug, count }));
+
+  // Build the featured list — countries with groups first, then fallbacks
+  const seen = new Set<string>();
+  const candidates: { slug: string; count: number }[] = [];
+
+  for (const { slug, count } of withGroups) {
+    if (countries.find((c) => c.slug === slug)) {
+      candidates.push({ slug, count });
+      seen.add(slug);
+    }
+  }
+
+  for (const slug of FALLBACK_SLUGS) {
+    if (!seen.has(slug) && candidates.length < limit) {
+      candidates.push({ slug, count: 0 });
+      seen.add(slug);
+    }
+  }
+
+  return candidates.slice(0, limit).map(({ slug, count }) => {
+    const country = countries.find((c) => c.slug === slug)!;
+    return {
+      name: country.name,
+      slug: country.slug,
+      region: country.region,
+      image: country.image,
+      groupCount: count,
+      bg: COUNTRY_BG[slug] ?? '#EAE8E3',
+    };
+  });
+}
 
 export type DisplayGroup = {
   id: string;

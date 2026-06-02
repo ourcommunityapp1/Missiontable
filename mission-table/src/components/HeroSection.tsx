@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const heroImage1 = "https://www.figma.com/api/mcp/asset/0e53c55e-5746-48de-8c97-ed9fe6e4d6e3";
-const heroImage2 = "https://www.figma.com/api/mcp/asset/c9a0a514-4cfb-4792-80d7-b2a5c1fd90b5";
+const heroImage1 = "/images/countries/spain.jpg";
+const heroImage2 = "/images/countries/china.jpg";
 
 export default function HeroSection() {
   return (
@@ -21,7 +21,7 @@ export default function HeroSection() {
           </div>
 
           {/* Hero image — mobile: full width below heading, desktop: floats right */}
-          <div className="mt-8 md:mt-0 md:absolute md:top-0 md:right-0 md:w-[34%]">
+          <div className="mt-8 md:mt-0 md:absolute md:top-0 md:right-0 md:w-[34%] md:z-0">
             <div className="relative w-full aspect-[3/2] rounded-[13px] overflow-hidden border-2 border-black">
               <Image
                 src={heroImage1}
@@ -34,7 +34,7 @@ export default function HeroSection() {
           </div>
 
           {/* Second floating image — hidden on mobile */}
-          <div className="hidden md:block absolute bottom-[-40px] right-[36%] w-[22%]">
+          <div className="hidden md:block absolute bottom-[-40px] right-[36%] w-[22%] z-0">
             <div className="relative w-full aspect-[3/2] rounded-[16px] overflow-hidden border-2 border-black">
               <Image
                 src={heroImage2}
