@@ -1,6 +1,8 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
+import { getMembersForGroup } from '@/lib/queries';
+import type { KitRow } from '@/lib/database.types';
 import { Resend } from 'resend';
 
 export async function updateChatLink(groupId: string, chatLink: string | null) {
@@ -60,5 +62,76 @@ export async function approveMember(membershipId: string, groupId: string) {
     } catch (err) {
       console.error('Member welcome email failed:', err);
     }
+  }
+}
+
+export async function resendKit(kitId: string, groupId: string, groupDisplayName: string) {
+  const { data: kit } = await supabase
+    .from('kits')
+    .select('*')
+    .eq('id', kitId)
+    .single() as unknown as { data: KitRow | null };
+
+  if (!kit) throw new Error('Kit not found');
+
+  const members = await getMembersForGroup(groupId);
+  if (members.accepted.length === 0) return;
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const groupUrl = `https://missiontable.org/group/${groupId}`;
+  const dateLabel = new Date(kit.meeting_date + 'T00:00:00').toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333">
+      <h2 style="font-size:24px;margin-bottom:4px">${groupDisplayName} — ${dateLabel} Kit</h2>
+      <p style="color:#888;margin-top:0">Your monthly gathering kit is ready.</p>
+
+      ${kit.recipe_name ? `
+      <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Recipe</h3>
+      <p style="margin:4px 0">${kit.recipe_url ? `<a href="${kit.recipe_url}" style="color:#000;font-weight:bold">${kit.recipe_name}</a>` : kit.recipe_name}</p>
+      ${kit.side_dish ? `<p style="color:#555;font-size:14px">Side dish: ${kit.side_dish}</p>` : ''}
+      ` : ''}
+
+      ${kit.scripture_text ? `
+      <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Scripture</h3>
+      <blockquote style="border-left:3px solid #000;margin:8px 0;padding:0 0 0 16px;font-style:italic;color:#333">${kit.scripture_text}</blockquote>
+      ${kit.scripture_reference ? `<p style="font-size:13px;color:#555;margin-top:4px">— ${kit.scripture_reference}</p>` : ''}
+      ` : ''}
+
+      ${kit.commentary ? `
+      <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Commentary</h3>
+      <p style="white-space:pre-line">${kit.commentary}</p>
+      ` : ''}
+
+      ${kit.prayer_requests ? `
+      <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Prayer Requests</h3>
+      <p style="white-space:pre-line">${kit.prayer_requests}</p>
+      ` : ''}
+
+      ${kit.gathering_prompt ? `
+      <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Gathering Prompt</h3>
+      <p style="white-space:pre-line">${kit.gathering_prompt}</p>
+      ` : ''}
+
+      <div style="border-top:2px solid #000;margin-top:32px;padding-top:16px">
+        <a href="${groupUrl}" style="color:#000;font-weight:bold;font-size:14px">View your group page →</a>
+      </div>
+    </div>
+  `;
+
+  try {
+    for (const member of members.accepted) {
+      await resend.emails.send({
+        from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
+        to: member.email,
+        subject: `${groupDisplayName} — ${dateLabel} Kit`,
+        html,
+      });
+    }
+  } catch (err) {
+    console.error('Kit resend failed:', err);
   }
 }

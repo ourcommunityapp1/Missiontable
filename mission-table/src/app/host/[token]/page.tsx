@@ -4,15 +4,16 @@ import Link from 'next/link';
 import TopNavBar from '@/components/TopNavBar';
 import Footer from '@/components/Footer';
 import { getHostByToken, getMembersForGroup, getKitsForGroup, type HostGroup } from '@/lib/queries';
-import { approveMember, updateChatLink } from './actions';
+import { approveMember, updateChatLink, resendKit } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-async function GroupSection({ group, token }: { group: HostGroup; token: string }) {
+async function GroupSection({ group, token, hostName }: { group: HostGroup; token: string; hostName: string }) {
   const [members, kits] = await Promise.all([
     getMembersForGroup(group.id),
     getKitsForGroup(group.id),
   ]);
+  const groupDisplayName = group.name ?? hostName;
 
   return (
     <div className="flex flex-col gap-12">
@@ -172,20 +173,35 @@ async function GroupSection({ group, token }: { group: HostGroup; token: string 
         ) : (
           <div className="flex flex-col">
             {kits.map((kit) => (
-              <div key={kit.id} className="border-t-2 border-black py-4 last:border-b-2">
-                <p className="font-inter font-semibold text-sm text-black">
-                  {new Date(kit.meeting_date + 'T00:00:00').toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </p>
-                {kit.recipe_name && (
-                  <p className="font-inter text-sm text-warm">{kit.recipe_name}</p>
-                )}
-                {kit.scripture_reference && (
-                  <p className="font-inter text-xs text-warm">{kit.scripture_reference}</p>
-                )}
+              <div key={kit.id} className="flex items-start justify-between gap-4 border-t-2 border-black py-4 last:border-b-2">
+                <div>
+                  <p className="font-inter font-semibold text-sm text-black">
+                    {new Date(kit.meeting_date + 'T00:00:00').toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </p>
+                  {kit.recipe_name && (
+                    <p className="font-inter text-sm text-warm">{kit.recipe_name}</p>
+                  )}
+                  {kit.scripture_reference && (
+                    <p className="font-inter text-xs text-warm">{kit.scripture_reference}</p>
+                  )}
+                </div>
+                <form
+                  action={async () => {
+                    'use server';
+                    await resendKit(kit.id, group.id, groupDisplayName);
+                  }}
+                >
+                  <button
+                    type="submit"
+                    className="font-inter font-semibold text-xs tracking-[0.05em] uppercase border-2 border-black px-3 py-2 hover:bg-black hover:text-white transition-colors whitespace-nowrap"
+                  >
+                    Resend →
+                  </button>
+                </form>
               </div>
             ))}
           </div>
@@ -230,7 +246,7 @@ export default async function HostDashboardPage({
           </p>
         ) : groups.length === 1 ? (
           <div className="max-w-[800px]">
-            <GroupSection group={groups[0]} token={token} />
+            <GroupSection group={groups[0]} token={token} hostName={host.name} />
           </div>
         ) : (
           <div className="flex flex-col gap-24">
@@ -242,7 +258,7 @@ export default async function HostDashboardPage({
                   </h2>
                   <p className="font-inter text-sm text-warm mt-1">{group.countryName}</p>
                 </div>
-                <GroupSection group={group} token={token} />
+                <GroupSection group={group} token={token} hostName={host.name} />
               </div>
             ))}
           </div>
