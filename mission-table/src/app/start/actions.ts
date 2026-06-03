@@ -38,7 +38,7 @@ export async function startGroup(formData: FormData): Promise<StartGroupResult> 
     .single();
 
   if (hostError || !host) {
-    return { success: false, error: 'Failed to save host info. Please try again.' };
+    return { success: false, error: `Debug: ${hostError?.message ?? 'host is null'} | url: ${process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 20) ?? 'missing'}` };
   }
 
   // end_date stored for future admin use — set far out so groups don't expire
