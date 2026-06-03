@@ -4,7 +4,8 @@ import Link from 'next/link';
 import TopNavBar from '@/components/TopNavBar';
 import Footer from '@/components/Footer';
 import { getHostByToken, getMembersForGroup, getKitsForGroup, type HostGroup } from '@/lib/queries';
-import { approveMember, updateChatLink, resendKit } from './actions';
+import { approveMember, updateChatLink } from './actions';
+import ResendKitButton from './ResendKitButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -196,19 +197,11 @@ async function GroupSection({ group, token, hostName }: { group: HostGroup; toke
                   >
                     Edit →
                   </Link>
-                  <form
-                    action={async () => {
-                      'use server';
-                      await resendKit(kit.id, group.id, groupDisplayName);
-                    }}
-                  >
-                    <button
-                      type="submit"
-                      className="font-inter font-semibold text-xs tracking-[0.05em] uppercase border-2 border-black px-3 py-2 hover:bg-black hover:text-white transition-colors whitespace-nowrap"
-                    >
-                      Resend →
-                    </button>
-                  </form>
+                  <ResendKitButton
+                    kitId={kit.id}
+                    groupId={group.id}
+                    groupDisplayName={groupDisplayName}
+                  />
                 </div>
               </div>
             ))}
