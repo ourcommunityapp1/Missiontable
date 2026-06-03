@@ -1,6 +1,7 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
+import { Resend } from 'resend';
 
 export type StartGroupResult =
   | { success: true; countrySlug: string }
@@ -48,7 +49,7 @@ export async function startGroup(formData: FormData): Promise<StartGroupResult> 
   end.setFullYear(end.getFullYear() + 50);
   const endDate = end.toISOString().split('T')[0];
 
-  const { error: groupError } = await supabase.from('groups').insert({
+  const { data: group, error: groupError } = await supabase.from('groups').insert({
     name: groupName,
     country_slug: countrySlug,
     host_id: host.id,
@@ -64,10 +65,43 @@ export async function startGroup(formData: FormData): Promise<StartGroupResult> 
     max_size: maxSize,
     start_date: startDate,
     end_date: endDate,
-  });
+    status: 'pending',
+  }).select('id').single();
 
-  if (groupError) {
+  if (groupError || !group) {
     return { success: false, error: 'Failed to create group. Please try again.' };
+  }
+
+  // Notify admin — errors are caught so a mail failure never blocks submission
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const approveUrl = `https://missiontable.org/api/admin/approve?token=${process.env.ADMIN_APPROVE_SECRET}&groupId=${group.id}`;
+
+    await resend.emails.send({
+      from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
+      to: 'projectmissiontable@gmail.com',
+      subject: `New group pending approval: ${groupName}`,
+      html: `
+        <p>A new group has been submitted and is waiting for your approval.</p>
+        <table style="border-collapse:collapse">
+          <tr><td style="padding:4px 16px 4px 0"><strong>Group Name</strong></td><td>${groupName}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0"><strong>Country</strong></td><td>${countrySlug}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0"><strong>Host</strong></td><td>${name}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0"><strong>Host Email</strong></td><td>${email}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0"><strong>Type</strong></td><td>${groupType}</td></tr>
+          ${city ? `<tr><td style="padding:4px 16px 4px 0"><strong>Location</strong></td><td>${city}${state ? `, ${state}` : ''}</td></tr>` : ''}
+        </table>
+        <br>
+        <a href="${approveUrl}" style="background:#000;color:#fff;padding:12px 24px;text-decoration:none;font-family:sans-serif;font-weight:bold;display:inline-block">
+          Approve This Group →
+        </a>
+        <p style="color:#888;font-size:12px;margin-top:16px">
+          Only click if you've reviewed this submission. The group will go live immediately.
+        </p>
+      `,
+    });
+  } catch (err) {
+    console.error('Admin notification email failed:', err);
   }
 
   return { success: true, countrySlug };

@@ -1,7 +1,7 @@
 export type HostType = 'individual' | 'church' | 'organization';
 export type GroupType = 'in-person' | 'virtual';
 export type RhythmType = 'date_of_month' | 'day_of_week_pattern';
-export type GroupStatus = 'active' | 'full' | 'inactive';
+export type GroupStatus = 'pending' | 'active' | 'full' | 'inactive';
 export type MembershipStatus = 'pending' | 'accepted' | 'declined';
 
 type HostRow = {
