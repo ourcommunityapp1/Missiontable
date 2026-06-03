@@ -87,10 +87,19 @@ export async function resendKit(kitId: string, groupId: string, groupDisplayName
   const html = `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333">
       <h2 style="font-size:24px;margin-bottom:4px">${groupDisplayName} — ${dateLabel} Kit</h2>
-      <p style="color:#888;margin-top:0">Your monthly gathering kit is ready.</p>
+      <p style="color:#888;margin-top:0;margin-bottom:20px">Your monthly gathering kit is ready.</p>
+
+      <div style="border:2px solid #000;padding:20px;margin-bottom:32px;background:#FBF9F4">
+        <p style="margin:0 0 14px;font-size:14px;color:#555;line-height:1.5">
+          Your group page is where you can see who else is gathering with you, find this kit anytime, and receive future kits from your host.
+        </p>
+        <a href="${groupUrl}" style="background:#000;color:#fff;padding:12px 24px;text-decoration:none;font-family:sans-serif;font-weight:bold;font-size:14px;display:inline-block;letter-spacing:0.05em">
+          VIEW YOUR GROUP PAGE →
+        </a>
+      </div>
 
       ${kit.recipe_name ? `
-      <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Recipe</h3>
+      <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:0">Recipe</h3>
       <p style="margin:4px 0">${kit.recipe_url ? `<a href="${kit.recipe_url}" style="color:#000;font-weight:bold">${kit.recipe_name}</a>` : kit.recipe_name}</p>
       ${kit.side_dish ? `<p style="color:#555;font-size:14px">Side dish: ${kit.side_dish}</p>` : ''}
       ` : ''}
@@ -115,10 +124,6 @@ export async function resendKit(kitId: string, groupId: string, groupDisplayName
       <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Gathering Prompt</h3>
       <p style="white-space:pre-line">${kit.gathering_prompt}</p>
       ` : ''}
-
-      <div style="border-top:2px solid #000;margin-top:32px;padding-top:16px">
-        <a href="${groupUrl}" style="color:#000;font-weight:bold;font-size:14px">View your group page →</a>
-      </div>
     </div>
   `;
 
