@@ -69,6 +69,7 @@ export async function getFeaturedCountries(limit = 3): Promise<FeaturedCountry[]
 
 export type DisplayGroup = {
   id: string;
+  name: string | null;
   hostedBy: string;
   groupType: 'in-person' | 'virtual';
   city: string | null;
@@ -131,6 +132,7 @@ function formatMeetingTime(time: string, timezone: string): string {
 
 type RawGroupRow = {
   id: string;
+  name: string | null;
   group_type: string;
   city: string | null;
   state: string | null;
@@ -146,6 +148,7 @@ type RawGroupRow = {
 
 export type GroupDetail = {
   id: string;
+  name: string | null;
   countrySlug: string;
   countryName: string;
   hostedBy: string;
@@ -161,6 +164,7 @@ export type GroupDetail = {
 
 type RawGroupDetailRow = {
   id: string;
+  name: string | null;
   country_slug: string;
   group_type: string;
   city: string | null;
@@ -181,6 +185,7 @@ export async function getGroupById(id: string): Promise<GroupDetail | null> {
     .from('groups')
     .select(`
       id,
+      name,
       country_slug,
       group_type,
       city,
@@ -213,6 +218,7 @@ export async function getGroupById(id: string): Promise<GroupDetail | null> {
 
   return {
     id: data.id,
+    name: data.name,
     countrySlug: data.country_slug,
     countryName: country?.name ?? data.country_slug,
     hostedBy: host?.name ?? 'Unknown Host',
@@ -232,6 +238,7 @@ export async function getGroupsForCountry(slug: string): Promise<DisplayGroup[]>
     .from('groups')
     .select(`
       id,
+      name,
       group_type,
       city,
       state,
@@ -256,6 +263,7 @@ export async function getGroupsForCountry(slug: string): Promise<DisplayGroup[]>
     const host = Array.isArray(row.hosts) ? row.hosts[0] : row.hosts;
     return {
       id: row.id,
+      name: row.name,
       hostedBy: host?.name ?? 'Unknown Host',
       groupType: row.group_type as 'in-person' | 'virtual',
       city: row.city,

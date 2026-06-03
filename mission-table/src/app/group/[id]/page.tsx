@@ -47,10 +47,13 @@ export default async function GroupDetailPage({
               {group.groupType === 'virtual' ? 'Virtual Group' : 'In-Person Group'} · {group.countryName}
             </p>
             <h1 className="font-fraunces font-bold text-[48px] md:text-[64px] uppercase leading-none tracking-[-0.04em] fraunces-64 text-black">
-              {group.hostedBy}
+              {group.name ?? group.hostedBy}
             </h1>
+            <p className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-warm mt-2">
+              Hosted By {group.hostedBy}
+            </p>
             {isInPerson && group.city && (
-              <p className="font-inter text-base text-warm mt-2">
+              <p className="font-inter text-base text-warm mt-1">
                 {group.city}{group.state ? `, ${group.state}` : ''}
               </p>
             )}
@@ -74,6 +77,14 @@ export default async function GroupDetailPage({
                 </p>
                 <p className="font-inter text-sm text-warm">{group.hostedBy}</p>
               </div>
+              {group.name && (
+                <div>
+                  <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-black mb-1">
+                    Group Name
+                  </p>
+                  <p className="font-inter text-sm text-warm">{group.name}</p>
+                </div>
+              )}
               <div>
                 <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-black mb-1">
                   Rhythm

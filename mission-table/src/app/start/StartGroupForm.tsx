@@ -310,6 +310,23 @@ export default function StartGroupForm({ defaultCountry }: { defaultCountry?: st
 
         <div className="flex flex-col gap-5 mb-6">
           <div>
+            <label htmlFor="group_name" className={labelClass}>
+              Group Name <span className="text-accent">*</span>
+            </label>
+            <input
+              id="group_name"
+              name="group_name"
+              type="text"
+              required
+              placeholder="e.g. Eastside Church India Group"
+              className={inputClass}
+            />
+            <p className="font-inter text-xs text-muted mt-1">
+              This is how your group will appear on the country page.
+            </p>
+          </div>
+
+          <div>
             <label htmlFor="country_slug" className={labelClass}>
               Country <span className="text-accent">*</span>
             </label>

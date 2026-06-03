@@ -216,11 +216,11 @@ export default async function CountryPage({
 
                   return (
                     <div key={group.id} className="border-2 border-black p-5">
-                      <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-warm mb-2">
-                        Hosted By
-                      </p>
                       <p className="font-fraunces font-bold text-2xl fraunces-32 text-black uppercase mb-1">
-                        {group.hostedBy}
+                        {group.name ?? group.hostedBy}
+                      </p>
+                      <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-warm mb-2">
+                        Hosted By {group.hostedBy}
                       </p>
                       {isInPerson && group.city && (
                         <p className="font-inter text-sm text-warm mb-1">

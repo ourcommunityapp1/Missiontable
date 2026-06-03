@@ -8,6 +8,7 @@ export type StartGroupResult =
 
 export async function startGroup(formData: FormData): Promise<StartGroupResult> {
   const name = formData.get('name') as string;
+  const groupName = (formData.get('group_name') as string)?.trim() || null;
   const email = formData.get('email') as string;
   const phone = (formData.get('phone') as string) || null;
   const hostType = formData.get('host_type') as 'individual' | 'church' | 'organization';
@@ -26,7 +27,7 @@ export async function startGroup(formData: FormData): Promise<StartGroupResult> 
   const maxSize = formData.get('max_size') ? parseInt(formData.get('max_size') as string) : null;
   const startDate = formData.get('start_date') as string;
 
-  if (!name || !email || !hostType || !countrySlug || !groupType || !rhythmType || !meetingTime || !timezone || !startDate) {
+  if (!name || !email || !groupName || !hostType || !countrySlug || !groupType || !rhythmType || !meetingTime || !timezone || !startDate) {
     return { success: false, error: 'Please fill in all required fields.' };
   }
 
@@ -48,6 +49,7 @@ export async function startGroup(formData: FormData): Promise<StartGroupResult> 
   const endDate = end.toISOString().split('T')[0];
 
   const { error: groupError } = await supabase.from('groups').insert({
+    name: groupName,
     country_slug: countrySlug,
     host_id: host.id,
     group_type: groupType,

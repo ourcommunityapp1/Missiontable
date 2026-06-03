@@ -80,9 +80,14 @@ export default function JoinGroupForm({ group }: { group: GroupDetail }) {
           <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-warm mb-1">
             {group.groupType === 'virtual' ? 'Virtual Group' : 'In-Person Group'} · {group.countryName}
           </p>
-          <p className="font-fraunces font-bold text-[28px] uppercase leading-none fraunces-32 text-black mb-3">
-            {group.hostedBy}
+          <p className="font-fraunces font-bold text-[28px] uppercase leading-none fraunces-32 text-black mb-1">
+            {group.name ?? group.hostedBy}
           </p>
+          {group.name && (
+            <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-warm mb-2">
+              Hosted By {group.hostedBy}
+            </p>
+          )}
           <div className="flex flex-wrap gap-x-6 gap-y-1">
             <p className="font-inter text-sm text-warm">{group.rhythm}</p>
             <p className="font-inter text-sm text-warm">{group.time}</p>

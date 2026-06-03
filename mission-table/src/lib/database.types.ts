@@ -26,6 +26,7 @@ type HostInsert = {
 
 type GroupRow = {
   id: string;
+  name: string | null;
   country_slug: string;
   host_id: string;
   group_type: GroupType;
@@ -46,6 +47,7 @@ type GroupRow = {
 
 type GroupInsert = {
   id?: string;
+  name?: string | null;
   country_slug: string;
   host_id: string;
   group_type: GroupType;
