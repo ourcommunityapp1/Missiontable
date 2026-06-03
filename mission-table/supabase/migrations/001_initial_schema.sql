@@ -143,3 +143,39 @@ create policy "Anyone can create a member"
 create policy "Anyone can create a membership"
   on memberships for insert
   with check (true);
+
+-- Anyone can update a member (upsert on email conflict)
+create policy "Anyone can update a member"
+  on members for update
+  using (true)
+  with check (true);
+
+-- Members are readable (needed to return id after upsert)
+create policy "Members are publicly readable"
+  on members for select
+  using (true);
+
+-- Memberships are readable (needed for member count queries)
+create policy "Memberships are publicly readable"
+  on memberships for select
+  using (true);
+
+-- Anyone can update a host (upsert on email conflict)
+create policy "Anyone can update a host"
+  on hosts for update
+  using (true)
+  with check (true);
+
+-- Service can update groups (admin approval flow)
+create policy "Service can update groups"
+  on groups for update
+  using (true)
+  with check (true);
+
+-- Additional migrations run directly in Supabase:
+-- alter type group_status add value 'pending';
+-- alter table groups alter column status set default 'pending';
+-- alter table members add column if not exists church text;
+-- alter table members add column if not exists city text;
+-- alter table members add column if not exists state text;
+-- alter table groups add column if not exists name text;
