@@ -7,8 +7,6 @@ export type JoinGroupResult =
   | { success: true }
   | { success: false; error: string };
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function joinGroup(
   groupId: string,
   formData: FormData,
@@ -56,41 +54,45 @@ export async function joinGroup(
     return { success: false, error: 'Failed to join group. Please try again.' };
   }
 
+  // Send emails — errors are caught so a mail failure never blocks the join
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const locationLine = [city, state].filter(Boolean).join(', ');
 
-  // Email host
-  if (host?.email) {
+  try {
+    if (host?.email) {
+      await resend.emails.send({
+        from: 'Mission Table <noreply@missiontable.org>',
+        to: host.email,
+        subject: `New join request from ${name}`,
+        html: `
+          <p>Hi ${host.name},</p>
+          <p>Someone has requested to join your Mission Table group.</p>
+          <table style="border-collapse:collapse">
+            <tr><td style="padding:4px 16px 4px 0"><strong>Name</strong></td><td>${name}</td></tr>
+            <tr><td style="padding:4px 16px 4px 0"><strong>Email</strong></td><td>${email}</td></tr>
+            <tr><td style="padding:4px 16px 4px 0"><strong>Phone</strong></td><td>${phone}</td></tr>
+            ${church ? `<tr><td style="padding:4px 16px 4px 0"><strong>Church</strong></td><td>${church}</td></tr>` : ''}
+            ${locationLine ? `<tr><td style="padding:4px 16px 4px 0"><strong>Location</strong></td><td>${locationLine}</td></tr>` : ''}
+          </table>
+          <p>Please reach out to them within 3 days to welcome them to the group.</p>
+        `,
+      });
+    }
+
     await resend.emails.send({
       from: 'Mission Table <noreply@missiontable.org>',
-      to: host.email,
-      subject: `New join request from ${name}`,
+      to: email,
+      subject: 'You requested to join a Mission Table group',
       html: `
-        <p>Hi ${host.name},</p>
-        <p>Someone has requested to join your Mission Table group.</p>
-        <table style="border-collapse:collapse">
-          <tr><td style="padding:4px 16px 4px 0"><strong>Name</strong></td><td>${name}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0"><strong>Email</strong></td><td>${email}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0"><strong>Phone</strong></td><td>${phone}</td></tr>
-          ${church ? `<tr><td style="padding:4px 16px 4px 0"><strong>Church</strong></td><td>${church}</td></tr>` : ''}
-          ${locationLine ? `<tr><td style="padding:4px 16px 4px 0"><strong>Location</strong></td><td>${locationLine}</td></tr>` : ''}
-        </table>
-        <p>Please reach out to them within 3 days to welcome them to the group.</p>
+        <p>Hi ${name},</p>
+        <p>Your request to join a Mission Table group has been received. Your host will reach out within 3 days to welcome you.</p>
+        <p>If you have any questions in the meantime, email us at <a href="mailto:projectmissiontable@gmail.com">projectmissiontable@gmail.com</a>.</p>
+        <p>— The Mission Table Team</p>
       `,
     });
+  } catch (err) {
+    console.error('Resend error:', err);
   }
-
-  // Email member confirmation
-  await resend.emails.send({
-    from: 'Mission Table <noreply@missiontable.org>',
-    to: email,
-    subject: 'You requested to join a Mission Table group',
-    html: `
-      <p>Hi ${name},</p>
-      <p>Your request to join a Mission Table group has been received. Your host will reach out within 3 days to welcome you.</p>
-      <p>If you have any questions in the meantime, email us at <a href="mailto:projectmissiontable@gmail.com">projectmissiontable@gmail.com</a>.</p>
-      <p>— The Mission Table Team</p>
-    `,
-  });
 
   return { success: true };
 }
