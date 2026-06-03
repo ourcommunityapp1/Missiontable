@@ -64,7 +64,7 @@ export default function AboutPage() {
               About
             </p>
             <h1 className="font-fraunces font-bold text-[56px] md:text-[80px] uppercase leading-none tracking-[-0.04em] fraunces-64 text-black mb-8">
-              Mission Table
+              Mission Table Beliefs
             </h1>
             <p className="font-inter text-base md:text-lg text-warm leading-[1.7] max-w-[600px]">
               Mission Table exists to gather believers around the table and the throne — to eat, to pray, and to long for the day when Jesus is known among every people. These are the convictions that hold us together.
