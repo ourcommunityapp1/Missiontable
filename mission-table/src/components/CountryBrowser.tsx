@@ -38,7 +38,7 @@ export default function CountryBrowser({ countries }: { countries: FeaturedCount
                     src={country.image}
                     alt={country.name}
                     fill
-                    className="object-cover grayscale"
+                    className="object-cover md:grayscale md:group-hover:grayscale-0 transition-all duration-500"
                     unoptimized
                   />
                   <div className="absolute top-4 left-4 bg-cream border-2 border-black px-3 py-1">

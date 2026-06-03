@@ -16,7 +16,7 @@ export default function CountryCard({ country }: { country: Country }) {
           src={country.image}
           alt={country.name}
           fill
-          className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+          className="object-cover md:grayscale md:group-hover:grayscale-0 transition-all duration-500"
           unoptimized
         />
         {/* Region tag */}
