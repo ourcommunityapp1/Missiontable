@@ -9,14 +9,18 @@ export const dynamic = 'force-dynamic';
 
 export default async function KitNewPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ groupId?: string }>;
 }) {
   const { token } = await params;
+  const { groupId } = await searchParams;
   const data = await getHostByToken(token);
-  if (!data || !data.group) notFound();
+  if (!data || data.groups.length === 0) notFound();
 
-  const { host, group } = data;
+  const { host, groups } = data;
+  const group = groups.find((g) => g.id === groupId) ?? groups[0];
 
   const meetingDates = generateMeetingDates(
     group.rhythm_type,

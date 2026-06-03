@@ -334,6 +334,23 @@ export async function getGroupsForCountry(slug: string): Promise<DisplayGroup[]>
 
 // ─── Host dashboard queries ───────────────────────────────────────────────────
 
+export type HostGroup = {
+  id: string;
+  name: string | null;
+  country_slug: string;
+  countryName: string;
+  status: string;
+  chat_link: string | null;
+  rhythm_type: string;
+  day_of_month: number | null;
+  week_of_month: number | null;
+  day_of_week: string | null;
+  meeting_time: string;
+  timezone: string;
+  rhythm: string;
+  time: string;
+};
+
 export type HostDashboardData = {
   host: {
     id: string;
@@ -341,22 +358,7 @@ export type HostDashboardData = {
     email: string;
     host_token: string;
   };
-  group: {
-    id: string;
-    name: string | null;
-    country_slug: string;
-    countryName: string;
-    status: string;
-    chat_link: string | null;
-    rhythm_type: string;
-    day_of_month: number | null;
-    week_of_month: number | null;
-    day_of_week: string | null;
-    meeting_time: string;
-    timezone: string;
-    rhythm: string;
-    time: string;
-  } | null;
+  groups: HostGroup[];
 };
 
 type RawHostRow = {
@@ -389,28 +391,24 @@ export async function getHostByToken(token: string): Promise<HostDashboardData |
 
   if (error || !host) return null;
 
-  const { data: groupData } = await supabase
+  const { data: groupsData } = await supabase
     .from('groups')
     .select('id, name, country_slug, status, chat_link, rhythm_type, day_of_month, week_of_month, day_of_week, meeting_time, timezone')
     .eq('host_id', host.id)
     .neq('status', 'inactive')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single() as unknown as { data: RawGroupForHost | null };
+    .order('created_at', { ascending: true }) as unknown as { data: RawGroupForHost[] | null };
 
-  if (!groupData) return { host, group: null };
+  const groups: HostGroup[] = (groupsData ?? []).map((g) => {
+    const country = countries.find((c) => c.slug === g.country_slug);
+    return {
+      ...g,
+      countryName: country?.name ?? g.country_slug,
+      rhythm: formatRhythm(g.rhythm_type, g.day_of_month, g.week_of_month, g.day_of_week),
+      time: formatMeetingTime(g.meeting_time, g.timezone),
+    };
+  });
 
-  const country = countries.find((c) => c.slug === groupData.country_slug);
-
-  return {
-    host,
-    group: {
-      ...groupData,
-      countryName: country?.name ?? groupData.country_slug,
-      rhythm: formatRhythm(groupData.rhythm_type, groupData.day_of_month, groupData.week_of_month, groupData.day_of_week),
-      time: formatMeetingTime(groupData.meeting_time, groupData.timezone),
-    },
-  };
+  return { host, groups };
 }
 
 export type GroupMembers = {
