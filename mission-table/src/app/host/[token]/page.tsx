@@ -189,19 +189,27 @@ async function GroupSection({ group, token, hostName }: { group: HostGroup; toke
                     <p className="font-inter text-xs text-warm">{kit.scripture_reference}</p>
                   )}
                 </div>
-                <form
-                  action={async () => {
-                    'use server';
-                    await resendKit(kit.id, group.id, groupDisplayName);
-                  }}
-                >
-                  <button
-                    type="submit"
+                <div className="flex gap-2 flex-shrink-0">
+                  <Link
+                    href={`/host/${token}/kit/${kit.id}/edit`}
                     className="font-inter font-semibold text-xs tracking-[0.05em] uppercase border-2 border-black px-3 py-2 hover:bg-black hover:text-white transition-colors whitespace-nowrap"
                   >
-                    Resend →
-                  </button>
-                </form>
+                    Edit →
+                  </Link>
+                  <form
+                    action={async () => {
+                      'use server';
+                      await resendKit(kit.id, group.id, groupDisplayName);
+                    }}
+                  >
+                    <button
+                      type="submit"
+                      className="font-inter font-semibold text-xs tracking-[0.05em] uppercase border-2 border-black px-3 py-2 hover:bg-black hover:text-white transition-colors whitespace-nowrap"
+                    >
+                      Resend →
+                    </button>
+                  </form>
+                </div>
               </div>
             ))}
           </div>
