@@ -24,11 +24,11 @@ export async function GET(req: NextRequest) {
   }
 
   return new NextResponse(
-    `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:40px;max-width:400px">
-      <h2>✓ Group Approved</h2>
+    `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:sans-serif;padding:40px;max-width:400px">
+      <h2>Group Approved</h2>
       <p>The group is now live on its country page.</p>
-      <a href="https://missiontable.org/browse">View the site →</a>
+      <a href="https://missiontable.org/browse">View the site &rarr;</a>
     </body></html>`,
-    { status: 200, headers: { 'Content-Type': 'text/html' } },
+    { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
   );
 }
