@@ -49,20 +49,20 @@ export default function HeroSection() {
           {/* Copy + CTAs */}
           <div className="mt-8 md:mt-12 md:max-w-[512px]">
             <p className="font-inter text-warm text-base md:text-lg leading-[1.6] mb-8">
-              Gather a small community monthly for a shared meal, focused prayer, and scripture dedicated to one country for an entire year. A simple rhythm for profound global impact.
+              Gather a small community monthly for a shared meal, focused prayer, and scripture dedicated to one country. A simple rhythm for profound global impact.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link
                 href="/browse"
                 className="bg-black text-white font-inter font-semibold text-sm tracking-[0.05em] uppercase px-8 py-4 border-2 border-black hover:bg-cream hover:text-black transition-colors text-center"
               >
-                BROWSE NATIONS
+                EXPLORE COUNTRIES
               </Link>
               <Link
-                href="/start"
+                href="/browse"
                 className="bg-cream text-black font-inter font-semibold text-sm tracking-[0.05em] uppercase px-8 py-4 border-2 border-black hover:bg-black hover:text-white transition-colors text-center"
               >
-                START A GROUP
+                JOIN A GROUP
               </Link>
             </div>
           </div>
