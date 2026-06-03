@@ -74,8 +74,17 @@ export async function resendKit(kitId: string, groupId: string, groupDisplayName
 
   if (!kit) throw new Error('Kit not found');
 
+  const { data: groupData } = await supabase
+    .from('groups')
+    .select('hosts (email)')
+    .eq('id', groupId)
+    .single() as unknown as { data: { hosts: { email: string } | { email: string }[] | null } | null };
+
+  const hostRaw = groupData?.hosts;
+  const hostEmail = (Array.isArray(hostRaw) ? hostRaw[0] : hostRaw)?.email ?? null;
+
   const members = await getMembersForGroup(groupId);
-  if (members.accepted.length === 0) return;
+  if (members.accepted.length === 0 && !hostEmail) return;
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   const groupUrl = `https://missiontable.org/group/${groupId}`;
@@ -133,6 +142,14 @@ export async function resendKit(kitId: string, groupId: string, groupDisplayName
         from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
         to: member.email,
         subject: `${groupDisplayName} — ${dateLabel} Kit`,
+        html,
+      });
+    }
+    if (hostEmail) {
+      await resend.emails.send({
+        from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
+        to: hostEmail,
+        subject: `[Your copy] ${groupDisplayName} — ${dateLabel} Kit`,
         html,
       });
     }
