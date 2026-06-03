@@ -1,18 +1,21 @@
 import TopNavBar from "@/components/TopNavBar";
 import Footer from "@/components/Footer";
-import CountryCard from "@/components/CountryCard";
-import { getCountriesByContinent, CONTINENT_ORDER } from "@/data/countries";
+import { getCountriesByContinent, CONTINENT_ORDER, countries } from "@/data/countries";
 import Link from "next/link";
+import { getAllGroupsForSearch } from "@/lib/queries";
+import BrowseSearch from "./BrowseSearch";
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: "The Nations — Mission Table",
-  description: "Find a country. Join a group. Pray for a year.",
+  description: "Find a country. Join a group. Pray for the nations.",
 };
 
-export default function BrowsePage() {
+export default async function BrowsePage() {
   const byContinent = getCountriesByContinent();
+  const allGroups = await getAllGroupsForSearch();
 
-  // Use defined order, then append any continents not in the order list
   const continentKeys = [
     ...CONTINENT_ORDER.filter((c) => byContinent[c]),
     ...Object.keys(byContinent).filter((c) => !CONTINENT_ORDER.includes(c)),
@@ -25,7 +28,7 @@ export default function BrowsePage() {
       <div className="max-w-[1280px] mx-auto w-full pt-16 md:pt-24 pb-24">
 
         {/* Page header */}
-        <div className="px-6 md:px-16 mb-16 md:mb-20">
+        <div className="px-6 md:px-16 mb-10 md:mb-12">
           <Link
             href="/"
             className="inline-flex items-center gap-2 font-inter font-semibold text-sm tracking-[0.05em] uppercase border-b-2 border-black pb-1 hover:text-warm transition-colors mb-10 md:mb-12"
@@ -37,40 +40,17 @@ export default function BrowsePage() {
             THE NATIONS
           </h1>
           <p className="font-inter text-warm text-base md:text-lg mt-4">
-            Find a country. Join a group. Pray for a year.
+            Find a country. Join a group. Pray for the nations.
           </p>
         </div>
 
-        {/* Continent sections */}
-        <div className="flex flex-col gap-16 md:gap-20">
-          {continentKeys.map((continent) => {
-            const countries = byContinent[continent];
-            return (
-              <section key={continent}>
-                {/* Continent divider — padded */}
-                <div className="px-6 md:px-16 border-t-2 border-black pt-4 mb-8">
-                  <span className="font-inter font-semibold text-sm tracking-[0.1em] uppercase text-black">
-                    {continent}
-                  </span>
-                </div>
+        <BrowseSearch
+          countries={countries}
+          groups={allGroups}
+          byContinent={byContinent}
+          continentKeys={continentKeys}
+        />
 
-                {/* Cards — snap-scroll on mobile (full bleed), 3-col grid on desktop (padded) */}
-                <div className="md:hidden flex gap-4 overflow-x-auto snap-x snap-mandatory pl-6 pr-6 pb-2 scrollbar-hide">
-                  {countries.map((country) => (
-                    <div key={country.slug} className="flex-none w-[82vw] snap-start">
-                      <CountryCard country={country} />
-                    </div>
-                  ))}
-                </div>
-                <div className="hidden md:grid md:grid-cols-3 md:gap-6 px-16">
-                  {countries.map((country) => (
-                    <CountryCard key={country.slug} country={country} />
-                  ))}
-                </div>
-              </section>
-            );
-          })}
-        </div>
       </div>
 
       <Footer />

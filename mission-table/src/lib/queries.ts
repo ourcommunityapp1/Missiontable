@@ -19,6 +19,45 @@ const COUNTRY_BG: Record<string, string> = {
 
 const FALLBACK_SLUGS = ['spain', 'china', 'guatemala'];
 
+export type SearchableGroup = {
+  id: string;
+  name: string;
+  hostedBy: string;
+  countrySlug: string;
+  countryName: string;
+  groupType: 'in-person' | 'virtual';
+};
+
+export async function getAllGroupsForSearch(): Promise<SearchableGroup[]> {
+  const { data } = await supabase
+    .from('groups')
+    .select(`id, name, group_type, country_slug, hosts (name)`)
+    .eq('status', 'active') as unknown as {
+      data: {
+        id: string;
+        name: string | null;
+        group_type: string;
+        country_slug: string;
+        hosts: { name: string } | { name: string }[] | null;
+      }[] | null;
+    };
+
+  if (!data) return [];
+
+  return data.map((row) => {
+    const host = Array.isArray(row.hosts) ? row.hosts[0] : row.hosts;
+    const country = countries.find((c) => c.slug === row.country_slug);
+    return {
+      id: row.id,
+      name: row.name ?? host?.name ?? 'Unnamed Group',
+      hostedBy: host?.name ?? '',
+      countrySlug: row.country_slug,
+      countryName: country?.name ?? row.country_slug,
+      groupType: row.group_type as 'in-person' | 'virtual',
+    };
+  });
+}
+
 export async function getFeaturedCountries(limit = 3): Promise<FeaturedCountry[]> {
   const { data } = await supabase
     .from('groups')
