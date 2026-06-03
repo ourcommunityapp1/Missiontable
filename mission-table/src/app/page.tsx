@@ -1,5 +1,6 @@
 import TopNavBar from "@/components/TopNavBar";
 import HeroSection from "@/components/HeroSection";
+import HowItWorks from "@/components/HowItWorks";
 import MonthlyRhythm from "@/components/MonthlyRhythm";
 import CountryBrowser from "@/components/CountryBrowser";
 import FinalCTA from "@/components/FinalCTA";
@@ -15,6 +16,7 @@ export default async function Home() {
     <main className="min-h-screen flex flex-col">
       <TopNavBar />
       <HeroSection />
+      <HowItWorks />
       <MonthlyRhythm />
       <CountryBrowser countries={featuredCountries} />
       <FinalCTA />

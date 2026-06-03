@@ -31,7 +31,7 @@ export default function MonthlyRhythm() {
           <h2
             className="font-fraunces font-bold text-4xl md:text-5xl tracking-[-0.02em] leading-[1.1] mb-4 fraunces-48"
           >
-            How it works
+            The Gathering
           </h2>
           <p className="font-inter text-warm text-base max-w-2xl">
             Whether it&apos;s all the same location, or whether every family gathers in their own home: you will all share the same rhythm.
