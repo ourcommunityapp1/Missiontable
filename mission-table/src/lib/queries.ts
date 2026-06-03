@@ -144,6 +144,89 @@ type RawGroupRow = {
   hosts: { name: string } | { name: string }[] | null;
 };
 
+export type GroupDetail = {
+  id: string;
+  countrySlug: string;
+  countryName: string;
+  hostedBy: string;
+  groupType: 'in-person' | 'virtual';
+  city: string | null;
+  state: string | null;
+  rhythm: string;
+  time: string;
+  memberCount: number;
+  maxSize: number | null;
+  startDate: string;
+};
+
+type RawGroupDetailRow = {
+  id: string;
+  country_slug: string;
+  group_type: string;
+  city: string | null;
+  state: string | null;
+  rhythm_type: string;
+  day_of_month: number | null;
+  week_of_month: number | null;
+  day_of_week: string | null;
+  meeting_time: string;
+  timezone: string;
+  max_size: number | null;
+  start_date: string;
+  hosts: { name: string } | { name: string }[] | null;
+};
+
+export async function getGroupById(id: string): Promise<GroupDetail | null> {
+  const { data, error } = await supabase
+    .from('groups')
+    .select(`
+      id,
+      country_slug,
+      group_type,
+      city,
+      state,
+      rhythm_type,
+      day_of_month,
+      week_of_month,
+      day_of_week,
+      meeting_time,
+      timezone,
+      max_size,
+      start_date,
+      hosts (
+        name
+      )
+    `)
+    .eq('id', id)
+    .eq('status', 'active')
+    .single() as unknown as { data: RawGroupDetailRow | null; error: unknown };
+
+  if (error || !data) return null;
+
+  const { count } = await supabase
+    .from('memberships')
+    .select('*', { count: 'exact', head: true })
+    .eq('group_id', id) as unknown as { count: number | null };
+
+  const host = Array.isArray(data.hosts) ? data.hosts[0] : data.hosts;
+  const country = countries.find((c) => c.slug === data.country_slug);
+
+  return {
+    id: data.id,
+    countrySlug: data.country_slug,
+    countryName: country?.name ?? data.country_slug,
+    hostedBy: host?.name ?? 'Unknown Host',
+    groupType: data.group_type as 'in-person' | 'virtual',
+    city: data.city,
+    state: data.state,
+    rhythm: formatRhythm(data.rhythm_type, data.day_of_month, data.week_of_month, data.day_of_week),
+    time: formatMeetingTime(data.meeting_time, data.timezone),
+    memberCount: count ?? 0,
+    maxSize: data.max_size,
+    startDate: data.start_date,
+  };
+}
+
 export async function getGroupsForCountry(slug: string): Promise<DisplayGroup[]> {
   const { data, error } = await supabase
     .from('groups')

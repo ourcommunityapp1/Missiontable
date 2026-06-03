@@ -259,10 +259,10 @@ export default async function CountryPage({
                       </div>
 
                       <Link
-                        href={`/join/${group.id}`}
+                        href={`/group/${group.id}`}
                         className="block w-full bg-black text-white font-inter font-semibold text-sm tracking-[0.05em] uppercase text-center py-4 border-2 border-black hover:bg-cream hover:text-black transition-colors"
                       >
-                        Join This Group →
+                        View Group Details →
                       </Link>
                     </div>
                   );

@@ -168,8 +168,17 @@ export default function StartGroupForm({ defaultCountry }: { defaultCountry?: st
             <h2 className="font-fraunces font-bold text-[40px] md:text-[48px] uppercase leading-none tracking-[-0.03em] fraunces-64 text-black mb-6">
               You&apos;re On the Map
             </h2>
-            <p className="font-inter text-base text-warm mb-8">
+            <p className="font-inter text-base text-warm mb-4">
               Your request has been received. A Mission Table admin will review and approve your group — once approved, it will appear on the country page you signed up for.
+            </p>
+            <p className="font-inter text-sm text-warm mb-8">
+              Questions? Email{' '}
+              <a
+                href="mailto:projectmissiontable@gmail.com"
+                className="font-semibold text-black underline"
+              >
+                projectmissiontable@gmail.com
+              </a>
             </p>
             <Link
               href={`/country/${successCountry}`}

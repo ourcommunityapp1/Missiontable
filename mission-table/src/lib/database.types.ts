@@ -69,6 +69,9 @@ type MemberRow = {
   name: string;
   email: string;
   phone: string | null;
+  church: string | null;
+  city: string | null;
+  state: string | null;
   auth_user_id: string | null;
   created_at: string;
 };
@@ -78,6 +81,9 @@ type MemberInsert = {
   name: string;
   email: string;
   phone?: string | null;
+  church?: string | null;
+  city?: string | null;
+  state?: string | null;
   auth_user_id?: string | null;
   created_at?: string;
 };
