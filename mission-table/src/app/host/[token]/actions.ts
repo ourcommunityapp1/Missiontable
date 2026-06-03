@@ -34,14 +34,14 @@ export async function approveMember(membershipId: string, groupId: string) {
 
   const { data: member } = await supabase
     .from('members')
-    .select('name, email')
+    .select('name, email, member_token')
     .eq('id', membership.member_id)
-    .single() as unknown as { data: { name: string; email: string } | null };
+    .single() as unknown as { data: { name: string; email: string; member_token: string } | null };
 
   if (member?.email) {
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);
-      const groupUrl = `https://missiontable.org/group/${groupId}`;
+      const groupUrl = `https://missiontable.org/group/${groupId}?token=${member.member_token}`;
       await resend.emails.send({
         from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
         to: member.email,
@@ -87,62 +87,64 @@ export async function resendKit(kitId: string, groupId: string, groupDisplayName
   if (members.accepted.length === 0 && !hostEmail) return;
 
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const groupUrl = `https://missiontable.org/group/${groupId}`;
   const dateLabel = new Date(kit.meeting_date + 'T00:00:00').toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
   });
 
-  const html = `
-    <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333">
-      <h2 style="font-size:24px;margin-bottom:4px">${groupDisplayName} — ${dateLabel} Kit</h2>
-      <p style="color:#888;margin-top:0;margin-bottom:20px">Your monthly gathering kit is ready.</p>
+  function buildHtml(k: KitRow, groupUrl: string) {
+    return `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333">
+        <h2 style="font-size:24px;margin-bottom:4px">${groupDisplayName} — ${dateLabel} Kit</h2>
+        <p style="color:#888;margin-top:0;margin-bottom:20px">Your monthly gathering kit is ready.</p>
 
-      <div style="border:2px solid #000;padding:20px;margin-bottom:32px;background:#FBF9F4">
-        <p style="margin:0 0 14px;font-size:14px;color:#555;line-height:1.5">
-          Your group page is where you can see who else is gathering with you, find this kit anytime, and receive future kits from your host.
-        </p>
-        <a href="${groupUrl}" style="background:#000;color:#fff;padding:12px 24px;text-decoration:none;font-family:sans-serif;font-weight:bold;font-size:14px;display:inline-block;letter-spacing:0.05em">
-          VIEW YOUR GROUP PAGE →
-        </a>
+        <div style="border:2px solid #000;padding:20px;margin-bottom:32px;background:#FBF9F4">
+          <p style="margin:0 0 14px;font-size:14px;color:#555;line-height:1.5">
+            Your group page is where you can see who else is gathering with you, find this kit anytime, and receive future kits from your host.
+          </p>
+          <a href="${groupUrl}" style="background:#000;color:#fff;padding:12px 24px;text-decoration:none;font-family:sans-serif;font-weight:bold;font-size:14px;display:inline-block;letter-spacing:0.05em">
+            VIEW YOUR GROUP PAGE →
+          </a>
+        </div>
+
+        ${k.recipe_name ? `
+        <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:0">Recipe</h3>
+        <p style="margin:4px 0">${k.recipe_url ? `<a href="${k.recipe_url}" style="color:#000;font-weight:bold">${k.recipe_name}</a>` : k.recipe_name}</p>
+        ${k.side_dish ? `<p style="color:#555;font-size:14px">Side dish: ${k.side_dish}</p>` : ''}
+        ` : ''}
+
+        ${k.scripture_text ? `
+        <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Scripture</h3>
+        <blockquote style="border-left:3px solid #000;margin:8px 0;padding:0 0 0 16px;font-style:italic;color:#333">${k.scripture_text}</blockquote>
+        ${k.scripture_reference ? `<p style="font-size:13px;color:#555;margin-top:4px">— ${k.scripture_reference}</p>` : ''}
+        ` : ''}
+
+        ${k.commentary ? `
+        <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Commentary</h3>
+        <p style="white-space:pre-line">${k.commentary}</p>
+        ` : ''}
+
+        ${k.prayer_requests ? `
+        <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Prayer Requests</h3>
+        <p style="white-space:pre-line">${k.prayer_requests}</p>
+        ` : ''}
+
+        ${k.gathering_prompt ? `
+        <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Gathering Prompt</h3>
+        <p style="white-space:pre-line">${k.gathering_prompt}</p>
+        ` : ''}
       </div>
-
-      ${kit.recipe_name ? `
-      <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:0">Recipe</h3>
-      <p style="margin:4px 0">${kit.recipe_url ? `<a href="${kit.recipe_url}" style="color:#000;font-weight:bold">${kit.recipe_name}</a>` : kit.recipe_name}</p>
-      ${kit.side_dish ? `<p style="color:#555;font-size:14px">Side dish: ${kit.side_dish}</p>` : ''}
-      ` : ''}
-
-      ${kit.scripture_text ? `
-      <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Scripture</h3>
-      <blockquote style="border-left:3px solid #000;margin:8px 0;padding:0 0 0 16px;font-style:italic;color:#333">${kit.scripture_text}</blockquote>
-      ${kit.scripture_reference ? `<p style="font-size:13px;color:#555;margin-top:4px">— ${kit.scripture_reference}</p>` : ''}
-      ` : ''}
-
-      ${kit.commentary ? `
-      <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Commentary</h3>
-      <p style="white-space:pre-line">${kit.commentary}</p>
-      ` : ''}
-
-      ${kit.prayer_requests ? `
-      <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Prayer Requests</h3>
-      <p style="white-space:pre-line">${kit.prayer_requests}</p>
-      ` : ''}
-
-      ${kit.gathering_prompt ? `
-      <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Gathering Prompt</h3>
-      <p style="white-space:pre-line">${kit.gathering_prompt}</p>
-      ` : ''}
-    </div>
-  `;
+    `;
+  }
 
   try {
     for (const member of members.accepted) {
+      const memberGroupUrl = `https://missiontable.org/group/${groupId}?token=${member.member_token}`;
       await resend.emails.send({
         from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
         to: member.email,
         subject: `${groupDisplayName} — ${dateLabel} Kit`,
-        html,
+        html: buildHtml(kit, memberGroupUrl),
       });
     }
     if (hostEmail) {
@@ -150,7 +152,7 @@ export async function resendKit(kitId: string, groupId: string, groupDisplayName
         from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
         to: hostEmail,
         subject: `[Your copy] ${groupDisplayName} — ${dateLabel} Kit`,
-        html,
+        html: buildHtml(kit, `https://missiontable.org/group/${groupId}`),
       });
     }
   } catch (err) {

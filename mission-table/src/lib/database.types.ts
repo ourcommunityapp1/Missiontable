@@ -78,6 +78,7 @@ type MemberRow = {
   church: string | null;
   city: string | null;
   state: string | null;
+  member_token: string;
   auth_user_id: string | null;
   created_at: string;
 };
@@ -90,6 +91,7 @@ type MemberInsert = {
   church?: string | null;
   city?: string | null;
   state?: string | null;
+  member_token?: string;
   auth_user_id?: string | null;
   created_at?: string;
 };

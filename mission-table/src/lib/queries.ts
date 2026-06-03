@@ -412,7 +412,7 @@ export async function getHostByToken(token: string): Promise<HostDashboardData |
 }
 
 export type GroupMembers = {
-  accepted: { id: string; name: string; email: string; city: string | null; state: string | null }[];
+  accepted: { id: string; name: string; email: string; member_token: string; city: string | null; state: string | null }[];
   pending: { id: string; membershipId: string; name: string; email: string; phone: string | null; church: string | null; city: string | null; state: string | null }[];
 };
 
@@ -423,6 +423,7 @@ type RawMembershipWithMember = {
     id: string;
     name: string;
     email: string;
+    member_token: string;
     phone: string | null;
     church: string | null;
     city: string | null;
@@ -433,7 +434,7 @@ type RawMembershipWithMember = {
 export async function getMembersForGroup(groupId: string): Promise<GroupMembers> {
   const { data } = await supabase
     .from('memberships')
-    .select('id, status, members (id, name, email, phone, church, city, state)')
+    .select('id, status, members (id, name, email, member_token, phone, church, city, state)')
     .eq('group_id', groupId)
     .in('status', ['pending', 'accepted'])
     .order('requested_at', { ascending: true }) as unknown as { data: RawMembershipWithMember[] | null };
@@ -445,13 +446,32 @@ export async function getMembersForGroup(groupId: string): Promise<GroupMembers>
     const m = row.members;
     if (!m) continue;
     if (row.status === 'accepted') {
-      accepted.push({ id: m.id, name: m.name, email: m.email, city: m.city, state: m.state });
+      accepted.push({ id: m.id, name: m.name, email: m.email, member_token: m.member_token, city: m.city, state: m.state });
     } else {
       pending.push({ id: m.id, membershipId: row.id, name: m.name, email: m.email, phone: m.phone, church: m.church, city: m.city, state: m.state });
     }
   }
 
   return { accepted, pending };
+}
+
+export async function verifyMemberToken(groupId: string, token: string): Promise<boolean> {
+  const { data: member } = await supabase
+    .from('members')
+    .select('id')
+    .eq('member_token', token)
+    .single() as unknown as { data: { id: string } | null };
+
+  if (!member) return false;
+
+  const { count } = await supabase
+    .from('memberships')
+    .select('*', { count: 'exact', head: true })
+    .eq('group_id', groupId)
+    .eq('member_id', member.id)
+    .eq('status', 'accepted') as unknown as { count: number | null };
+
+  return (count ?? 0) > 0;
 }
 
 export async function getLatestKit(groupId: string): Promise<KitRow | null> {

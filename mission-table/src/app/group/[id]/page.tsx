@@ -2,22 +2,28 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import TopNavBar from '@/components/TopNavBar';
 import Footer from '@/components/Footer';
-import { getGroupById, getMembersForGroup, getLatestKit } from '@/lib/queries';
+import { getGroupById, getMembersForGroup, getLatestKit, verifyMemberToken } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
 export default async function GroupDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ token?: string }>;
 }) {
   const { id } = await params;
-  const [group, members, latestKit] = await Promise.all([
-    getGroupById(id),
-    getMembersForGroup(id),
-    getLatestKit(id),
-  ]);
+  const { token } = await searchParams;
+
+  const group = await getGroupById(id);
   if (!group) notFound();
+
+  const isMember = token ? await verifyMemberToken(id, token) : false;
+
+  const [members, latestKit] = isMember
+    ? await Promise.all([getMembersForGroup(id), getLatestKit(id)])
+    : [{ accepted: [], pending: [] }, null];
 
   const isInPerson = group.groupType === 'in-person';
   const spotsRemaining =

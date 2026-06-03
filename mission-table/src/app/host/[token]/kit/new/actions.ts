@@ -52,63 +52,64 @@ export async function createKit(
   const members = await getMembersForGroup(groupId);
   if (members.accepted.length > 0) {
     const resend = new Resend(process.env.RESEND_API_KEY);
-    const groupUrl = `https://missiontable.org/group/${groupId}`;
-
     const dateLabel = new Date(meetingDate + 'T00:00:00').toLocaleDateString('en-US', {
       month: 'long',
       year: 'numeric',
     });
 
-    const kitHtml = `
-      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333">
-        <h2 style="font-size:24px;margin-bottom:4px">${groupDisplayName} — ${dateLabel} Kit</h2>
-        <p style="color:#888;margin-top:0;margin-bottom:20px">Your monthly gathering kit is ready.</p>
+    function buildKitHtml(groupUrl: string) {
+      return `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333">
+          <h2 style="font-size:24px;margin-bottom:4px">${groupDisplayName} — ${dateLabel} Kit</h2>
+          <p style="color:#888;margin-top:0;margin-bottom:20px">Your monthly gathering kit is ready.</p>
 
-        <div style="border:2px solid #000;padding:20px;margin-bottom:32px;background:#FBF9F4">
-          <p style="margin:0 0 14px;font-size:14px;color:#555;line-height:1.5">
-            Your group page is where you can see who else is gathering with you, find this kit anytime, and receive future kits from your host.
-          </p>
-          <a href="${groupUrl}" style="background:#000;color:#fff;padding:12px 24px;text-decoration:none;font-family:sans-serif;font-weight:bold;font-size:14px;display:inline-block;letter-spacing:0.05em">
-            VIEW YOUR GROUP PAGE →
-          </a>
+          <div style="border:2px solid #000;padding:20px;margin-bottom:32px;background:#FBF9F4">
+            <p style="margin:0 0 14px;font-size:14px;color:#555;line-height:1.5">
+              Your group page is where you can see who else is gathering with you, find this kit anytime, and receive future kits from your host.
+            </p>
+            <a href="${groupUrl}" style="background:#000;color:#fff;padding:12px 24px;text-decoration:none;font-family:sans-serif;font-weight:bold;font-size:14px;display:inline-block;letter-spacing:0.05em">
+              VIEW YOUR GROUP PAGE →
+            </a>
+          </div>
+
+          ${recipeName ? `
+          <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:0">Recipe</h3>
+          <p style="margin:4px 0">${recipeUrl ? `<a href="${recipeUrl}" style="color:#000;font-weight:bold">${recipeName}</a>` : recipeName}</p>
+          ${sideDish ? `<p style="color:#555;font-size:14px">Side dish: ${sideDish}</p>` : ''}
+          ` : ''}
+
+          ${scriptureText ? `
+          <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Scripture</h3>
+          <blockquote style="border-left:3px solid #000;margin:8px 0;padding:0 0 0 16px;font-style:italic;color:#333">${scriptureText}</blockquote>
+          ${scriptureReference ? `<p style="font-size:13px;color:#555;margin-top:4px">— ${scriptureReference}</p>` : ''}
+          ` : ''}
+
+          ${commentary ? `
+          <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Commentary</h3>
+          <p style="white-space:pre-line">${commentary}</p>
+          ` : ''}
+
+          ${prayerRequests ? `
+          <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Prayer Requests</h3>
+          <p style="white-space:pre-line">${prayerRequests}</p>
+          ` : ''}
+
+          ${gatheringPrompt ? `
+          <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Gathering Prompt</h3>
+          <p style="white-space:pre-line">${gatheringPrompt}</p>
+          ` : ''}
         </div>
-
-        ${recipeName ? `
-        <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:0">Recipe</h3>
-        <p style="margin:4px 0">${recipeUrl ? `<a href="${recipeUrl}" style="color:#000;font-weight:bold">${recipeName}</a>` : recipeName}</p>
-        ${sideDish ? `<p style="color:#555;font-size:14px">Side dish: ${sideDish}</p>` : ''}
-        ` : ''}
-
-        ${scriptureText ? `
-        <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Scripture</h3>
-        <blockquote style="border-left:3px solid #000;margin:8px 0;padding:0 0 0 16px;font-style:italic;color:#333">${scriptureText}</blockquote>
-        ${scriptureReference ? `<p style="font-size:13px;color:#555;margin-top:4px">— ${scriptureReference}</p>` : ''}
-        ` : ''}
-
-        ${commentary ? `
-        <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Commentary</h3>
-        <p style="white-space:pre-line">${commentary}</p>
-        ` : ''}
-
-        ${prayerRequests ? `
-        <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Prayer Requests</h3>
-        <p style="white-space:pre-line">${prayerRequests}</p>
-        ` : ''}
-
-        ${gatheringPrompt ? `
-        <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Gathering Prompt</h3>
-        <p style="white-space:pre-line">${gatheringPrompt}</p>
-        ` : ''}
-      </div>
-    `;
+      `;
+    }
 
     try {
       for (const member of members.accepted) {
+        const memberGroupUrl = `https://missiontable.org/group/${groupId}?token=${member.member_token}`;
         await resend.emails.send({
           from: `Mission Table <noreply@requesttojoin.missiontable.org>`,
           to: member.email,
           subject: `${groupDisplayName} — ${dateLabel} Kit`,
-          html: kitHtml,
+          html: buildKitHtml(memberGroupUrl),
         });
       }
     } catch (err) {

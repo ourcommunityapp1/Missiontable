@@ -101,14 +101,14 @@ export async function GET(request: Request) {
   // Fetch member info to send welcome email
   const { data: member } = await supabase
     .from('members')
-    .select('name, email')
+    .select('name, email, member_token')
     .eq('id', membership.member_id)
-    .single() as unknown as { data: { name: string; email: string } | null };
+    .single() as unknown as { data: { name: string; email: string; member_token: string } | null };
 
   if (member?.email) {
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);
-      const groupUrl = `https://missiontable.org/group/${membership.group_id}`;
+      const groupUrl = `https://missiontable.org/group/${membership.group_id}?token=${member.member_token}`;
       await resend.emails.send({
         from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
         to: member.email,
