@@ -280,7 +280,9 @@ export default async function CountryPage({
               {/* TODO: subtext should be dynamic — "Be the first" only when hasTables is false;
                   when groups exist, use something like "Start your own group for {country.name}." */}
               <p className="font-inter text-sm text-warm mb-4">
-                Be the first to start a Mission Table for {country.name}.
+                {hasGroups
+                  ? `Start your own group for ${country.name}.`
+                  : `Be the first to start a Mission Table for ${country.name}.`}
               </p>
               <Link
                 href="/start"
