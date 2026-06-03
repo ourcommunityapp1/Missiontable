@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import TopNavBar from '@/components/TopNavBar';
 import Footer from '@/components/Footer';
-import { getGroupById } from '@/lib/queries';
+import { getGroupById, getMembersForGroup, getLatestKit } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,11 @@ export default async function GroupDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const group = await getGroupById(id);
+  const [group, members, latestKit] = await Promise.all([
+    getGroupById(id),
+    getMembersForGroup(id),
+    getLatestKit(id),
+  ]);
   if (!group) notFound();
 
   const isInPerson = group.groupType === 'in-person';
@@ -132,6 +136,107 @@ export default async function GroupDetailPage({
               </div>
             </div>
           </div>
+
+          {/* Members */}
+          {members.accepted.length > 0 && (
+            <div className="border-2 border-black p-5 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <p className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-black">
+                  Group Members ({members.accepted.length})
+                </p>
+                {group.chat_link && (
+                  <a
+                    href={group.chat_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-inter font-semibold text-xs tracking-[0.05em] uppercase border-b-2 border-black pb-0.5 hover:text-warm transition-colors"
+                  >
+                    Join Chat →
+                  </a>
+                )}
+              </div>
+              <div className="flex flex-col">
+                {members.accepted.map((m) => (
+                  <div key={m.id} className="flex items-center justify-between border-t border-black/20 py-2 first:border-t-0">
+                    <p className="font-inter text-sm text-black">{m.name}</p>
+                    {(m.city || m.state) && (
+                      <p className="font-inter text-xs text-warm">
+                        {[m.city, m.state].filter(Boolean).join(', ')}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Latest kit */}
+          {latestKit && (
+            <div className="border-2 border-black p-5 mb-6">
+              <p className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-black mb-4">
+                This Month's Kit —{' '}
+                {new Date(latestKit.meeting_date + 'T00:00:00').toLocaleDateString('en-US', {
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </p>
+
+              {latestKit.recipe_name && (
+                <div className="mb-4">
+                  <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-warm mb-1">Recipe</p>
+                  {latestKit.recipe_url ? (
+                    <a
+                      href={latestKit.recipe_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-inter text-sm font-semibold text-black border-b border-black"
+                    >
+                      {latestKit.recipe_name}
+                    </a>
+                  ) : (
+                    <p className="font-inter text-sm text-black">{latestKit.recipe_name}</p>
+                  )}
+                  {latestKit.side_dish && (
+                    <p className="font-inter text-xs text-warm mt-1">Side dish: {latestKit.side_dish}</p>
+                  )}
+                </div>
+              )}
+
+              {latestKit.scripture_text && (
+                <div className="mb-4">
+                  <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-warm mb-1">Scripture</p>
+                  <blockquote className="border-l-2 border-black pl-3 font-inter text-sm text-warm italic leading-[1.6]">
+                    {latestKit.scripture_text}
+                  </blockquote>
+                  {latestKit.scripture_reference && (
+                    <p className="font-inter text-xs text-warm mt-1">— {latestKit.scripture_reference}</p>
+                  )}
+                </div>
+              )}
+
+              {latestKit.commentary && (
+                <div className="mb-4">
+                  <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-warm mb-1">Commentary</p>
+                  <p className="font-inter text-sm text-warm whitespace-pre-line leading-[1.6]">{latestKit.commentary}</p>
+                </div>
+              )}
+
+              {latestKit.prayer_requests && (
+                <div className="mb-4">
+                  <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-warm mb-1">Prayer Requests</p>
+                  <p className="font-inter text-sm text-warm whitespace-pre-line leading-[1.6]">{latestKit.prayer_requests}</p>
+                </div>
+              )}
+
+              {latestKit.gathering_prompt && (
+                <div>
+                  <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-warm mb-1">Gathering Prompt</p>
+                  <p className="font-inter text-sm text-warm italic leading-[1.6]">{latestKit.gathering_prompt}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Join CTA */}
           <Link

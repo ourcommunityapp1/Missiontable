@@ -10,6 +10,7 @@ type HostRow = {
   email: string;
   phone: string | null;
   host_type: HostType;
+  host_token: string;
   auth_user_id: string | null;
   created_at: string;
 };
@@ -20,6 +21,7 @@ type HostInsert = {
   email: string;
   phone?: string | null;
   host_type: HostType;
+  host_token?: string;
   auth_user_id?: string | null;
   created_at?: string;
 };
@@ -32,6 +34,7 @@ type GroupRow = {
   group_type: GroupType;
   city: string | null;
   state: string | null;
+  chat_link: string | null;
   rhythm_type: RhythmType;
   day_of_month: number | null;
   week_of_month: number | null;
@@ -53,6 +56,7 @@ type GroupInsert = {
   group_type: GroupType;
   city?: string | null;
   state?: string | null;
+  chat_link?: string | null;
   rhythm_type: RhythmType;
   day_of_month?: number | null;
   week_of_month?: number | null;
@@ -108,6 +112,36 @@ type MembershipInsert = {
   updated_at?: string;
 };
 
+export type KitRow = {
+  id: string;
+  group_id: string;
+  meeting_date: string;
+  recipe_name: string | null;
+  recipe_url: string | null;
+  side_dish: string | null;
+  scripture_text: string | null;
+  scripture_reference: string | null;
+  commentary: string | null;
+  prayer_requests: string | null;
+  gathering_prompt: string | null;
+  created_at: string;
+};
+
+type KitInsert = {
+  id?: string;
+  group_id: string;
+  meeting_date: string;
+  recipe_name?: string | null;
+  recipe_url?: string | null;
+  side_dish?: string | null;
+  scripture_text?: string | null;
+  scripture_reference?: string | null;
+  commentary?: string | null;
+  prayer_requests?: string | null;
+  gathering_prompt?: string | null;
+  created_at?: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -133,6 +167,12 @@ export type Database = {
         Row: MembershipRow;
         Insert: MembershipInsert;
         Update: Partial<MembershipInsert>;
+        Relationships: [];
+      };
+      kits: {
+        Row: KitRow;
+        Insert: KitInsert;
+        Update: Partial<KitInsert>;
         Relationships: [];
       };
     };

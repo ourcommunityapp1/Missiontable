@@ -36,8 +36,8 @@ export async function startGroup(formData: FormData): Promise<StartGroupResult> 
   const { data: host, error: hostError } = await supabase
     .from('hosts')
     .upsert({ name, email, phone, host_type: hostType }, { onConflict: 'email' })
-    .select('id')
-    .single();
+    .select('id, host_token')
+    .single() as unknown as { data: { id: string; host_token: string } | null; error: unknown };
 
   if (hostError || !host) {
     return { success: false, error: 'Failed to save host info. Please try again.' };
@@ -72,7 +72,36 @@ export async function startGroup(formData: FormData): Promise<StartGroupResult> 
     return { success: false, error: 'Failed to create group. Please try again.' };
   }
 
-  // Notify admin — errors are caught so a mail failure never blocks submission
+  // Send emails — errors are caught so a mail failure never blocks submission
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const dashboardUrl = `https://missiontable.org/host/${host.host_token}`;
+
+    await resend.emails.send({
+      from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
+      to: email,
+      subject: 'Your Mission Table group has been submitted',
+      html: `
+        <p>Hi ${name},</p>
+        <p>Thank you for submitting your Mission Table group! We'll review it and approve it shortly.</p>
+        <p>Once approved, your group will be listed publicly and people can request to join.</p>
+        <p><strong>Bookmark your host dashboard link:</strong></p>
+        <p>
+          <a href="${dashboardUrl}" style="background:#000;color:#fff;padding:12px 24px;text-decoration:none;font-family:sans-serif;font-weight:bold;display:inline-block">
+            Open Your Host Dashboard →
+          </a>
+        </p>
+        <p style="color:#888;font-size:12px;margin-top:16px">
+          This link is your private dashboard — save it. You'll use it to approve members and send monthly kits.
+        </p>
+        <p>— The Mission Table Team</p>
+      `,
+    });
+  } catch (err) {
+    console.error('Host confirmation email failed:', err);
+  }
+
+  // Notify admin
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
     const approveUrl = `https://missiontable.org/api/admin/approve?token=${process.env.ADMIN_APPROVE_SECRET}&groupId=${group.id}`;

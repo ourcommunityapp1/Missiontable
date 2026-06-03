@@ -22,12 +22,12 @@ export async function joinGroup(
     return { success: false, error: 'Please fill in all required fields.' };
   }
 
-  // Fetch host email from the group (server-side only)
+  // Fetch host info from the group (server-side only)
   const { data: groupData } = await supabase
     .from('groups')
-    .select('hosts (email, name)')
+    .select('hosts (email, name, host_token)')
     .eq('id', groupId)
-    .single() as unknown as { data: { hosts: { email: string; name: string } | { email: string; name: string }[] | null } | null };
+    .single() as unknown as { data: { hosts: { email: string; name: string; host_token: string } | { email: string; name: string; host_token: string }[] | null } | null };
 
   const hostRaw = groupData?.hosts;
   const host = Array.isArray(hostRaw) ? hostRaw[0] : hostRaw;
@@ -44,13 +44,13 @@ export async function joinGroup(
   }
 
   // Insert membership (status: pending)
-  const { error: membershipError } = await supabase.from('memberships').insert({
+  const { data: membership, error: membershipError } = await supabase.from('memberships').insert({
     group_id: groupId,
     member_id: member.id,
     status: 'pending',
-  });
+  }).select('id').single() as unknown as { data: { id: string } | null; error: unknown };
 
-  if (membershipError) {
+  if (membershipError || !membership) {
     return { success: false, error: 'Failed to join group. Please try again.' };
   }
 
@@ -60,6 +60,7 @@ export async function joinGroup(
 
   try {
     if (host?.email) {
+      const approveUrl = `https://missiontable.org/api/host/approve-member?token=${host.host_token}&membershipId=${membership.id}`;
       await resend.emails.send({
         from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
         to: host.email,
@@ -74,7 +75,11 @@ export async function joinGroup(
             ${church ? `<tr><td style="padding:4px 16px 4px 0"><strong>Church</strong></td><td>${church}</td></tr>` : ''}
             ${locationLine ? `<tr><td style="padding:4px 16px 4px 0"><strong>Location</strong></td><td>${locationLine}</td></tr>` : ''}
           </table>
-          <p>Please reach out to them within 3 days to welcome them to the group.</p>
+          <br>
+          <a href="${approveUrl}" style="background:#000;color:#fff;padding:12px 24px;text-decoration:none;font-family:sans-serif;font-weight:bold;display:inline-block">
+            Approve ${name} →
+          </a>
+          <p style="font-size:12px;color:#888;margin-top:12px">Or manage all your members at your <a href="https://missiontable.org/host/${host.host_token}">host dashboard</a>.</p>
         `,
       });
     }
