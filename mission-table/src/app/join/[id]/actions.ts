@@ -61,7 +61,7 @@ export async function joinGroup(
   try {
     if (host?.email) {
       await resend.emails.send({
-        from: 'Mission Table <noreply@missiontable.org>',
+        from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
         to: host.email,
         subject: `New join request from ${name}`,
         html: `
@@ -80,7 +80,7 @@ export async function joinGroup(
     }
 
     await resend.emails.send({
-      from: 'Mission Table <noreply@missiontable.org>',
+      from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
       to: email,
       subject: 'You requested to join a Mission Table group',
       html: `
