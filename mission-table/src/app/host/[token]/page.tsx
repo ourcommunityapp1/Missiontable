@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import Link from 'next/link';
 import TopNavBar from '@/components/TopNavBar';
 import Footer from '@/components/Footer';
@@ -58,6 +59,7 @@ async function GroupSection({ group, token }: { group: HostGroup; token: string 
               'use server';
               const link = (formData.get('chat_link') as string)?.trim() || null;
               await updateChatLink(group.id, link);
+              revalidatePath(`/host/${token}`);
             }}
             className="flex gap-3 items-end border-t-2 border-black pt-4"
           >
@@ -112,6 +114,7 @@ async function GroupSection({ group, token }: { group: HostGroup; token: string 
                     action={async () => {
                       'use server';
                       await approveMember(m.membershipId, group.id);
+                      revalidatePath(`/host/${token}`);
                     }}
                   >
                     <button
