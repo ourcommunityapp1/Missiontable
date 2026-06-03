@@ -298,6 +298,18 @@ export async function getGroupsForCountry(slug: string): Promise<DisplayGroup[]>
 
   if (error || !data) return [];
 
+  // Fetch membership counts for all groups in one query
+  const groupIds = data.map((r) => r.id);
+  const { data: memberships } = await supabase
+    .from('memberships')
+    .select('group_id')
+    .in('group_id', groupIds) as unknown as { data: { group_id: string }[] | null };
+
+  const countByGroup: Record<string, number> = {};
+  for (const m of memberships ?? []) {
+    countByGroup[m.group_id] = (countByGroup[m.group_id] ?? 0) + 1;
+  }
+
   return data.map((row) => {
     const host = Array.isArray(row.hosts) ? row.hosts[0] : row.hosts;
     return {
@@ -309,7 +321,7 @@ export async function getGroupsForCountry(slug: string): Promise<DisplayGroup[]>
       state: row.state,
       rhythm: formatRhythm(row.rhythm_type, row.day_of_month, row.week_of_month, row.day_of_week),
       time: formatMeetingTime(row.meeting_time, row.timezone),
-      memberCount: 0,
+      memberCount: countByGroup[row.id] ?? 0,
       maxSize: row.max_size,
     };
   });
