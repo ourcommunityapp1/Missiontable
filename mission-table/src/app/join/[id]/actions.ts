@@ -1,6 +1,7 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
+import { esc } from '@/lib/escapeHtml';
 import { Resend } from 'resend';
 
 export type JoinGroupResult =
@@ -43,6 +44,18 @@ export async function joinGroup(
     return { success: false, error: 'Failed to save your info. Please try again.' };
   }
 
+  // Prevent duplicate memberships
+  const { count: existingCount } = await supabase
+    .from('memberships')
+    .select('*', { count: 'exact', head: true })
+    .eq('group_id', groupId)
+    .eq('member_id', member.id)
+    .in('status', ['pending', 'accepted']) as unknown as { count: number | null };
+
+  if (existingCount && existingCount > 0) {
+    return { success: true };
+  }
+
   // Insert membership (status: pending)
   const { data: membership, error: membershipError } = await supabase.from('memberships').insert({
     group_id: groupId,
@@ -66,18 +79,18 @@ export async function joinGroup(
         to: host.email,
         subject: `New join request from ${name}`,
         html: `
-          <p>Hi ${host.name},</p>
+          <p>Hi ${esc(host.name)},</p>
           <p>Someone has requested to join your Mission Table group.</p>
           <table style="border-collapse:collapse">
-            <tr><td style="padding:4px 16px 4px 0"><strong>Name</strong></td><td>${name}</td></tr>
-            <tr><td style="padding:4px 16px 4px 0"><strong>Email</strong></td><td>${email}</td></tr>
-            <tr><td style="padding:4px 16px 4px 0"><strong>Phone</strong></td><td>${phone}</td></tr>
-            ${church ? `<tr><td style="padding:4px 16px 4px 0"><strong>Church</strong></td><td>${church}</td></tr>` : ''}
-            ${locationLine ? `<tr><td style="padding:4px 16px 4px 0"><strong>Location</strong></td><td>${locationLine}</td></tr>` : ''}
+            <tr><td style="padding:4px 16px 4px 0"><strong>Name</strong></td><td>${esc(name)}</td></tr>
+            <tr><td style="padding:4px 16px 4px 0"><strong>Email</strong></td><td>${esc(email)}</td></tr>
+            <tr><td style="padding:4px 16px 4px 0"><strong>Phone</strong></td><td>${esc(phone)}</td></tr>
+            ${church ? `<tr><td style="padding:4px 16px 4px 0"><strong>Church</strong></td><td>${esc(church)}</td></tr>` : ''}
+            ${locationLine ? `<tr><td style="padding:4px 16px 4px 0"><strong>Location</strong></td><td>${esc(locationLine)}</td></tr>` : ''}
           </table>
           <br>
           <a href="${approveUrl}" style="background:#000;color:#fff;padding:12px 24px;text-decoration:none;font-family:sans-serif;font-weight:bold;display:inline-block">
-            Approve ${name} →
+            Approve ${esc(name)} →
           </a>
           <p style="font-size:12px;color:#888;margin-top:12px">Or manage all your members at your <a href="https://missiontable.org/host/${host.host_token}">host dashboard</a>.</p>
         `,
@@ -89,7 +102,7 @@ export async function joinGroup(
       to: email,
       subject: 'You requested to join a Mission Table group',
       html: `
-        <p>Hi ${name},</p>
+        <p>Hi ${esc(name)},</p>
         <p>Your request to join a Mission Table group has been received. Your host will reach out within 3 days to welcome you.</p>
         <p>If you have any questions in the meantime, email us at <a href="mailto:projectmissiontable@gmail.com">projectmissiontable@gmail.com</a>.</p>
         <p>— The Mission Table Team</p>

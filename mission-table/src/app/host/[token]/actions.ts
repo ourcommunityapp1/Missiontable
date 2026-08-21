@@ -2,6 +2,8 @@
 
 import { supabase } from '@/lib/supabase';
 import { getMembersForGroup } from '@/lib/queries';
+import { esc } from '@/lib/escapeHtml';
+import { trackServer } from '@/lib/mixpanelServer';
 import type { KitRow } from '@/lib/database.types';
 import { Resend } from 'resend';
 
@@ -47,7 +49,7 @@ export async function approveMember(membershipId: string, groupId: string) {
         to: member.email,
         subject: "You've been approved — welcome to your Mission Table group",
         html: `
-          <p>Hi ${member.name},</p>
+          <p>Hi ${esc(member.name)},</p>
           <p>Great news — your host has approved your request to join the Mission Table group!</p>
           <p>You can view your group page, see who else is in the group, and find the monthly kit here:</p>
           <p>
@@ -59,6 +61,7 @@ export async function approveMember(membershipId: string, groupId: string) {
           <p>— The Mission Table Team</p>
         `,
       });
+      await trackServer('member_approved', member.member_token, { group_id: groupId });
     } catch (err) {
       console.error('Member welcome email failed:', err);
     }
@@ -95,7 +98,7 @@ export async function resendKit(kitId: string, groupId: string, groupDisplayName
   function buildHtml(k: KitRow, groupUrl: string) {
     return `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333">
-        <h2 style="font-size:24px;margin-bottom:4px">${groupDisplayName} — ${dateLabel} Kit</h2>
+        <h2 style="font-size:24px;margin-bottom:4px">${esc(groupDisplayName)} — ${dateLabel} Kit</h2>
         <p style="color:#888;margin-top:0;margin-bottom:20px">Your monthly gathering kit is ready.</p>
 
         <div style="border:2px solid #000;padding:20px;margin-bottom:32px;background:#FBF9F4">
@@ -109,29 +112,29 @@ export async function resendKit(kitId: string, groupId: string, groupDisplayName
 
         ${k.recipe_name ? `
         <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:0">Recipe</h3>
-        <p style="margin:4px 0">${k.recipe_url ? `<a href="${k.recipe_url}" style="color:#000;font-weight:bold">${k.recipe_name}</a>` : k.recipe_name}</p>
-        ${k.side_dish ? `<p style="color:#555;font-size:14px">Side dish: ${k.side_dish}</p>` : ''}
+        <p style="margin:4px 0">${k.recipe_url ? `<a href="${esc(k.recipe_url)}" style="color:#000;font-weight:bold">${esc(k.recipe_name)}</a>` : esc(k.recipe_name)}</p>
+        ${k.side_dish ? `<p style="color:#555;font-size:14px">Side dish: ${esc(k.side_dish)}</p>` : ''}
         ` : ''}
 
         ${k.scripture_text ? `
         <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Scripture</h3>
-        <blockquote style="border-left:3px solid #000;margin:8px 0;padding:0 0 0 16px;font-style:italic;color:#333">${k.scripture_text}</blockquote>
-        ${k.scripture_reference ? `<p style="font-size:13px;color:#555;margin-top:4px">— ${k.scripture_reference}</p>` : ''}
+        <blockquote style="border-left:3px solid #000;margin:8px 0;padding:0 0 0 16px;font-style:italic;color:#333">${esc(k.scripture_text)}</blockquote>
+        ${k.scripture_reference ? `<p style="font-size:13px;color:#555;margin-top:4px">— ${esc(k.scripture_reference)}</p>` : ''}
         ` : ''}
 
         ${k.commentary ? `
         <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Commentary</h3>
-        <p style="white-space:pre-line">${k.commentary}</p>
+        <p style="white-space:pre-line">${esc(k.commentary)}</p>
         ` : ''}
 
         ${k.prayer_requests ? `
         <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Prayer Requests</h3>
-        <p style="white-space:pre-line">${k.prayer_requests}</p>
+        <p style="white-space:pre-line">${esc(k.prayer_requests)}</p>
         ` : ''}
 
         ${k.gathering_prompt ? `
         <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Gathering Prompt</h3>
-        <p style="white-space:pre-line">${k.gathering_prompt}</p>
+        <p style="white-space:pre-line">${esc(k.gathering_prompt)}</p>
         ` : ''}
       </div>
     `;
@@ -145,6 +148,12 @@ export async function resendKit(kitId: string, groupId: string, groupDisplayName
         to: member.email,
         subject: `${groupDisplayName} — ${dateLabel} Kit`,
         html: buildHtml(kit, memberGroupUrl),
+      });
+      await trackServer('kit_email_sent', member.member_token, {
+        group_id: groupId,
+        kit_id: kitId,
+        meeting_date: kit.meeting_date,
+        resend: true,
       });
     }
     if (hostEmail) {

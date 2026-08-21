@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { startGroup } from './actions';
+import { track } from '@/lib/mixpanel';
 
 const COUNTRIES = [
   { name: 'Bangladesh', slug: 'bangladesh' },
@@ -137,6 +138,13 @@ export default function StartGroupForm({ defaultCountry }: { defaultCountry?: st
   const isDateOfMonth = rhythmType === 'date_of_month';
   const isDayOfWeekPattern = rhythmType === 'day_of_week_pattern';
 
+  useEffect(() => {
+    track('start_group_page_viewed', {
+      ...(defaultCountry ? { default_country: defaultCountry } : {}),
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -151,6 +159,28 @@ export default function StartGroupForm({ defaultCountry }: { defaultCountry?: st
     setPending(false);
 
     if (result.success) {
+      const city = (formData.get('city') as string)?.trim() || undefined;
+      const state = (formData.get('state') as string)?.trim() || undefined;
+      const dayOfMonth = (formData.get('day_of_month') as string)?.trim();
+      const weekOfMonth = (formData.get('week_of_month') as string)?.trim();
+      const dayOfWeek = (formData.get('day_of_week') as string)?.trim() || undefined;
+      const maxSize = (formData.get('max_size') as string)?.trim();
+      track('group_started', {
+        country_slug: formData.get('country_slug') as string,
+        group_name: (formData.get('group_name') as string)?.trim(),
+        group_type: groupType,
+        host_type: hostType,
+        rhythm_type: rhythmType,
+        meeting_time: formData.get('meeting_time') as string,
+        timezone: formData.get('timezone') as string,
+        start_date: formData.get('start_date') as string,
+        ...(city ? { city } : {}),
+        ...(state ? { state } : {}),
+        ...(dayOfMonth ? { day_of_month: parseInt(dayOfMonth) } : {}),
+        ...(weekOfMonth ? { week_of_month: parseInt(weekOfMonth) } : {}),
+        ...(dayOfWeek ? { day_of_week: dayOfWeek } : {}),
+        ...(maxSize ? { max_size: parseInt(maxSize) } : {}),
+      });
       setSuccessCountry(result.countrySlug);
     } else {
       setError(result.error);

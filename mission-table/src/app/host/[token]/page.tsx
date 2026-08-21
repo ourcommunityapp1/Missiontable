@@ -3,16 +3,17 @@ import { revalidatePath } from 'next/cache';
 import Link from 'next/link';
 import TopNavBar from '@/components/TopNavBar';
 import Footer from '@/components/Footer';
-import { getHostByToken, getMembersForGroup, getKitsForGroup, type HostGroup } from '@/lib/queries';
+import { getHostByToken, getMembersForGroup, getKitsForGroup, getFieldPostsForGroup, type HostGroup } from '@/lib/queries';
 import { approveMember, updateChatLink } from './actions';
 import ResendKitButton from './ResendKitButton';
 
 export const dynamic = 'force-dynamic';
 
 async function GroupSection({ group, token, hostName }: { group: HostGroup; token: string; hostName: string }) {
-  const [members, kits] = await Promise.all([
+  const [members, kits, fieldPosts] = await Promise.all([
     getMembersForGroup(group.id),
     getKitsForGroup(group.id),
+    getFieldPostsForGroup(group.id),
   ]);
   const groupDisplayName = group.name ?? hostName;
 
@@ -21,9 +22,17 @@ async function GroupSection({ group, token, hostName }: { group: HostGroup; toke
 
       {/* ── Your Group ────────────────────────────────── */}
       <section>
-        <h2 className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-black border-t-2 border-black pt-4 mb-6">
-          Group Details
-        </h2>
+        <div className="flex items-center justify-between border-t-2 border-black pt-4 mb-6">
+          <h2 className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-black">
+            Group Details
+          </h2>
+          <Link
+            href={`/host/${token}/group/${group.id}/edit`}
+            className="font-inter font-semibold text-xs tracking-[0.05em] uppercase border-b-2 border-black pb-0.5 hover:text-warm transition-colors"
+          >
+            Edit Details →
+          </Link>
+        </div>
 
         <div className="border-2 border-black p-5">
           <div className="grid grid-cols-2 gap-6 mb-6">
@@ -153,23 +162,23 @@ async function GroupSection({ group, token, hostName }: { group: HostGroup; toke
         ) : null}
       </section>
 
-      {/* ── Kits ──────────────────────────────────────── */}
+      {/* ── Meals ─────────────────────────────────────── */}
       <section>
         <div className="flex items-center justify-between border-t-2 border-black pt-4 mb-6">
           <h2 className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-black">
-            Kits
+            Meals
           </h2>
           <Link
             href={`/host/${token}/kit/new?groupId=${group.id}`}
             className="font-inter font-semibold text-xs tracking-[0.05em] uppercase border-b-2 border-black pb-0.5 hover:text-warm transition-colors"
           >
-            Create This Month's Kit →
+            Create This Month's Meal →
           </Link>
         </div>
 
         {kits.length === 0 ? (
           <p className="font-inter text-base text-warm">
-            No kits yet. Create your first kit to send your group a recipe, scripture, and prayer requests.
+            No meals yet. Create your first meal to send your group a recipe, scripture, and prayer requests.
           </p>
         ) : (
           <div className="flex flex-col">
@@ -203,6 +212,40 @@ async function GroupSection({ group, token, hostName }: { group: HostGroup; toke
                     groupDisplayName={groupDisplayName}
                   />
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ── From the Field ────────────────────────────── */}
+      <section>
+        <div className="flex items-center justify-between border-t-2 border-black pt-4 mb-6">
+          <h2 className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-black">
+            From the Field
+          </h2>
+          <Link
+            href={`/host/${token}/field-post/new?groupId=${group.id}`}
+            className="font-inter font-semibold text-xs tracking-[0.05em] uppercase border-b-2 border-black pb-0.5 hover:text-warm transition-colors"
+          >
+            New Post →
+          </Link>
+        </div>
+
+        {fieldPosts.length === 0 ? (
+          <p className="font-inter text-base text-warm">
+            No updates yet. Share a note from your mission partner in the field.
+          </p>
+        ) : (
+          <div className="flex flex-col">
+            {fieldPosts.map((post) => (
+              <div key={post.id} className="border-t-2 border-black py-4 last:border-b-2">
+                <p className="font-inter font-semibold text-sm text-black">{post.author_label}</p>
+                <p className="font-inter text-sm text-warm mt-1 line-clamp-2">{post.body}</p>
+                <p className="font-inter text-xs text-warm mt-1">
+                  {new Date(post.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  {' · '}{post.reactionCount} praying · {post.comments.length} comments
+                </p>
               </div>
             ))}
           </div>

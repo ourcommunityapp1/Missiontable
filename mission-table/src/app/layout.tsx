@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
+import MixpanelProvider from "@/components/MixpanelProvider";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -27,7 +28,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${fraunces.variable} ${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-cream">{children}</body>
+      <body className="min-h-full flex flex-col bg-cream">
+        <MixpanelProvider />
+        {children}
+      </body>
     </html>
   );
 }

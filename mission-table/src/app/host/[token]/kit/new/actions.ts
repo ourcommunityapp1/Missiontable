@@ -2,6 +2,8 @@
 
 import { supabase } from '@/lib/supabase';
 import { getMembersForGroup } from '@/lib/queries';
+import { esc } from '@/lib/escapeHtml';
+import { trackServer } from '@/lib/mixpanelServer';
 import { Resend } from 'resend';
 
 export type CreateKitResult =
@@ -28,7 +30,7 @@ export async function createKit(
     return { success: false, error: 'Please select a meeting date.' };
   }
 
-  const { error: insertError } = await supabase.from('kits').insert({
+  const { data: newKit, error: insertError } = await supabase.from('kits').insert({
     group_id: groupId,
     meeting_date: meetingDate,
     recipe_name: recipeName,
@@ -39,7 +41,7 @@ export async function createKit(
     commentary,
     prayer_requests: prayerRequests,
     gathering_prompt: gatheringPrompt,
-  });
+  }).select('id').single() as unknown as { data: { id: string } | null; error: { code: string } | null };
 
   if (insertError) {
     if (insertError.code === '23505') {
@@ -48,9 +50,21 @@ export async function createKit(
     return { success: false, error: 'Failed to save kit. Please try again.' };
   }
 
-  // Email all accepted members
+  const kitId = newKit?.id ?? null;
+
+  // Email all accepted members + host copy
   const members = await getMembersForGroup(groupId);
-  if (members.accepted.length > 0) {
+
+  const { data: groupData } = await supabase
+    .from('groups')
+    .select('hosts (email)')
+    .eq('id', groupId)
+    .single() as unknown as { data: { hosts: { email: string } | { email: string }[] | null } | null };
+
+  const hostRaw = groupData?.hosts;
+  const hostEmail = (Array.isArray(hostRaw) ? hostRaw[0] : hostRaw)?.email ?? null;
+
+  if (members.accepted.length > 0 || hostEmail) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     const dateLabel = new Date(meetingDate + 'T00:00:00').toLocaleDateString('en-US', {
       month: 'long',
@@ -60,7 +74,7 @@ export async function createKit(
     function buildKitHtml(groupUrl: string) {
       return `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333">
-          <h2 style="font-size:24px;margin-bottom:4px">${groupDisplayName} — ${dateLabel} Kit</h2>
+          <h2 style="font-size:24px;margin-bottom:4px">${esc(groupDisplayName)} — ${dateLabel} Kit</h2>
           <p style="color:#888;margin-top:0;margin-bottom:20px">Your monthly gathering kit is ready.</p>
 
           <div style="border:2px solid #000;padding:20px;margin-bottom:32px;background:#FBF9F4">
@@ -74,29 +88,29 @@ export async function createKit(
 
           ${recipeName ? `
           <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:0">Recipe</h3>
-          <p style="margin:4px 0">${recipeUrl ? `<a href="${recipeUrl}" style="color:#000;font-weight:bold">${recipeName}</a>` : recipeName}</p>
-          ${sideDish ? `<p style="color:#555;font-size:14px">Side dish: ${sideDish}</p>` : ''}
+          <p style="margin:4px 0">${recipeUrl ? `<a href="${esc(recipeUrl)}" style="color:#000;font-weight:bold">${esc(recipeName)}</a>` : esc(recipeName)}</p>
+          ${sideDish ? `<p style="color:#555;font-size:14px">Side dish: ${esc(sideDish)}</p>` : ''}
           ` : ''}
 
           ${scriptureText ? `
           <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Scripture</h3>
-          <blockquote style="border-left:3px solid #000;margin:8px 0;padding:0 0 0 16px;font-style:italic;color:#333">${scriptureText}</blockquote>
-          ${scriptureReference ? `<p style="font-size:13px;color:#555;margin-top:4px">— ${scriptureReference}</p>` : ''}
+          <blockquote style="border-left:3px solid #000;margin:8px 0;padding:0 0 0 16px;font-style:italic;color:#333">${esc(scriptureText)}</blockquote>
+          ${scriptureReference ? `<p style="font-size:13px;color:#555;margin-top:4px">— ${esc(scriptureReference)}</p>` : ''}
           ` : ''}
 
           ${commentary ? `
           <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Commentary</h3>
-          <p style="white-space:pre-line">${commentary}</p>
+          <p style="white-space:pre-line">${esc(commentary)}</p>
           ` : ''}
 
           ${prayerRequests ? `
           <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Prayer Requests</h3>
-          <p style="white-space:pre-line">${prayerRequests}</p>
+          <p style="white-space:pre-line">${esc(prayerRequests)}</p>
           ` : ''}
 
           ${gatheringPrompt ? `
           <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.08em;border-top:2px solid #000;padding-top:16px;margin-top:24px">Gathering Prompt</h3>
-          <p style="white-space:pre-line">${gatheringPrompt}</p>
+          <p style="white-space:pre-line">${esc(gatheringPrompt)}</p>
           ` : ''}
         </div>
       `;
@@ -110,6 +124,20 @@ export async function createKit(
           to: member.email,
           subject: `${groupDisplayName} — ${dateLabel} Kit`,
           html: buildKitHtml(memberGroupUrl),
+        });
+        await trackServer('kit_email_sent', member.member_token, {
+          group_id: groupId,
+          kit_id: kitId,
+          meeting_date: meetingDate,
+          resend: false,
+        });
+      }
+      if (hostEmail) {
+        await resend.emails.send({
+          from: `Mission Table <noreply@requesttojoin.missiontable.org>`,
+          to: hostEmail,
+          subject: `[Your copy] ${groupDisplayName} — ${dateLabel} Kit`,
+          html: buildKitHtml(`https://missiontable.org/group/${groupId}`),
         });
       }
     } catch (err) {

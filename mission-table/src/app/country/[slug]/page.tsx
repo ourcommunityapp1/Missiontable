@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import { countries } from '@/data/countries';
 import { getGroupsForCountry } from '@/lib/queries';
 import { JP_SCALE } from '@/data/jpScale';
+import CountryPageTracker from './CountryPageTracker';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,6 +59,12 @@ export default async function CountryPage({
   return (
     <main className="min-h-screen flex flex-col bg-cream">
       <TopNavBar />
+      <CountryPageTracker
+        countrySlug={country.slug}
+        countryName={country.name}
+        region={country.region}
+        groupCount={groups.length}
+      />
 
       <div className="max-w-[1280px] mx-auto w-full">
 

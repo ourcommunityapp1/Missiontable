@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { countries } from '@/data/countries';
-import type { KitRow } from './database.types';
+import type { KitRow, FieldPostRow, FieldPostReactionRow, FieldPostCommentRow } from './database.types';
 
 export type FeaturedCountry = {
   name: string;
@@ -201,6 +201,10 @@ export type GroupDetail = {
   memberCount: number;
   maxSize: number | null;
   startDate: string;
+  rhythmType: string;
+  dayOfMonth: number | null;
+  weekOfMonth: number | null;
+  dayOfWeek: string | null;
 };
 
 type RawGroupDetailRow = {
@@ -254,7 +258,8 @@ export async function getGroupById(id: string): Promise<GroupDetail | null> {
   const { count } = await supabase
     .from('memberships')
     .select('*', { count: 'exact', head: true })
-    .eq('group_id', id) as unknown as { count: number | null };
+    .eq('group_id', id)
+    .eq('status', 'accepted') as unknown as { count: number | null };
 
   const host = Array.isArray(data.hosts) ? data.hosts[0] : data.hosts;
   const country = countries.find((c) => c.slug === data.country_slug);
@@ -274,6 +279,10 @@ export async function getGroupById(id: string): Promise<GroupDetail | null> {
     memberCount: count ?? 0,
     maxSize: data.max_size,
     startDate: data.start_date,
+    rhythmType: data.rhythm_type,
+    dayOfMonth: data.day_of_month,
+    weekOfMonth: data.week_of_month,
+    dayOfWeek: data.day_of_week,
   };
 }
 
@@ -308,7 +317,8 @@ export async function getGroupsForCountry(slug: string): Promise<DisplayGroup[]>
   const { data: memberships } = await supabase
     .from('memberships')
     .select('group_id')
-    .in('group_id', groupIds) as unknown as { data: { group_id: string }[] | null };
+    .in('group_id', groupIds)
+    .eq('status', 'accepted') as unknown as { data: { group_id: string }[] | null };
 
   const countByGroup: Record<string, number> = {};
   for (const m of memberships ?? []) {
@@ -341,6 +351,11 @@ export type HostGroup = {
   countryName: string;
   status: string;
   chat_link: string | null;
+  group_type: 'in-person' | 'virtual';
+  city: string | null;
+  state: string | null;
+  max_size: number | null;
+  start_date: string;
   rhythm_type: string;
   day_of_month: number | null;
   week_of_month: number | null;
@@ -374,6 +389,11 @@ type RawGroupForHost = {
   country_slug: string;
   status: string;
   chat_link: string | null;
+  group_type: string;
+  city: string | null;
+  state: string | null;
+  max_size: number | null;
+  start_date: string;
   rhythm_type: string;
   day_of_month: number | null;
   week_of_month: number | null;
@@ -393,7 +413,7 @@ export async function getHostByToken(token: string): Promise<HostDashboardData |
 
   const { data: groupsData } = await supabase
     .from('groups')
-    .select('id, name, country_slug, status, chat_link, rhythm_type, day_of_month, week_of_month, day_of_week, meeting_time, timezone')
+    .select('id, name, country_slug, status, chat_link, group_type, city, state, max_size, start_date, rhythm_type, day_of_month, week_of_month, day_of_week, meeting_time, timezone')
     .eq('host_id', host.id)
     .neq('status', 'inactive')
     .order('created_at', { ascending: true }) as unknown as { data: RawGroupForHost[] | null };
@@ -402,6 +422,7 @@ export async function getHostByToken(token: string): Promise<HostDashboardData |
     const country = countries.find((c) => c.slug === g.country_slug);
     return {
       ...g,
+      group_type: g.group_type as 'in-person' | 'virtual',
       countryName: country?.name ?? g.country_slug,
       rhythm: formatRhythm(g.rhythm_type, g.day_of_month, g.week_of_month, g.day_of_week),
       time: formatMeetingTime(g.meeting_time, g.timezone),
@@ -455,14 +476,14 @@ export async function getMembersForGroup(groupId: string): Promise<GroupMembers>
   return { accepted, pending };
 }
 
-export async function verifyMemberToken(groupId: string, token: string): Promise<boolean> {
+export async function getMemberIdForToken(groupId: string, token: string): Promise<string | null> {
   const { data: member } = await supabase
     .from('members')
     .select('id')
     .eq('member_token', token)
     .single() as unknown as { data: { id: string } | null };
 
-  if (!member) return false;
+  if (!member) return null;
 
   const { count } = await supabase
     .from('memberships')
@@ -471,7 +492,11 @@ export async function verifyMemberToken(groupId: string, token: string): Promise
     .eq('member_id', member.id)
     .eq('status', 'accepted') as unknown as { count: number | null };
 
-  return (count ?? 0) > 0;
+  return (count ?? 0) > 0 ? member.id : null;
+}
+
+export async function verifyMemberToken(groupId: string, token: string): Promise<boolean> {
+  return (await getMemberIdForToken(groupId, token)) !== null;
 }
 
 export async function getLatestKit(groupId: string): Promise<KitRow | null> {
@@ -494,6 +519,91 @@ export async function getKitsForGroup(groupId: string): Promise<KitRow[]> {
     .order('meeting_date', { ascending: false }) as unknown as { data: KitRow[] | null };
 
   return data ?? [];
+}
+
+export function isMeetingDatePast(meetingDate: string): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(meetingDate + 'T00:00:00') < today;
+}
+
+export type KitAttendance = { count: number; members: { id: string; name: string }[] };
+
+export async function getAttendanceForKits(kitIds: string[]): Promise<Record<string, KitAttendance>> {
+  if (kitIds.length === 0) return {};
+
+  const { data } = await supabase
+    .from('kit_attendance')
+    .select('kit_id, members (id, name)')
+    .in('kit_id', kitIds) as unknown as {
+      data: { kit_id: string; members: { id: string; name: string } | { id: string; name: string }[] | null }[] | null;
+    };
+
+  const result: Record<string, KitAttendance> = {};
+  for (const row of data ?? []) {
+    const member = Array.isArray(row.members) ? row.members[0] : row.members;
+    if (!member) continue;
+    if (!result[row.kit_id]) result[row.kit_id] = { count: 0, members: [] };
+    result[row.kit_id].count += 1;
+    result[row.kit_id].members.push(member);
+  }
+  return result;
+}
+
+export type FieldPostWithEngagement = FieldPostRow & {
+  reactionCount: number;
+  reactedMemberIds: string[];
+  comments: { id: string; body: string; created_at: string; member_id: string; memberName: string }[];
+};
+
+export async function getFieldPostsForGroup(groupId: string): Promise<FieldPostWithEngagement[]> {
+  const { data: posts } = await supabase
+    .from('field_posts')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('created_at', { ascending: false }) as unknown as { data: FieldPostRow[] | null };
+
+  const postList = posts ?? [];
+  if (postList.length === 0) return [];
+
+  const postIds = postList.map((p) => p.id);
+
+  const [{ data: reactions }, { data: comments }] = await Promise.all([
+    supabase
+      .from('field_post_reactions')
+      .select('post_id, member_id')
+      .in('post_id', postIds) as unknown as Promise<{ data: FieldPostReactionRow[] | null }>,
+    supabase
+      .from('field_post_comments')
+      .select('id, post_id, body, created_at, member_id, members (name)')
+      .in('post_id', postIds)
+      .order('created_at', { ascending: true }) as unknown as Promise<{
+        data: (FieldPostCommentRow & { members: { name: string } | { name: string }[] | null })[] | null;
+      }>,
+  ]);
+
+  return postList.map((post) => {
+    const postReactions = (reactions ?? []).filter((r) => r.post_id === post.id);
+    const postComments = (comments ?? [])
+      .filter((c) => c.post_id === post.id)
+      .map((c) => {
+        const member = Array.isArray(c.members) ? c.members[0] : c.members;
+        return {
+          id: c.id,
+          body: c.body,
+          created_at: c.created_at,
+          member_id: c.member_id,
+          memberName: member?.name ?? 'A member',
+        };
+      });
+
+    return {
+      ...post,
+      reactionCount: postReactions.length,
+      reactedMemberIds: postReactions.map((r) => r.member_id),
+      comments: postComments,
+    };
+  });
 }
 
 // ─── Meeting date generator ───────────────────────────────────────────────────
@@ -545,4 +655,14 @@ export function generateMeetingDates(
   }
 
   return dates;
+}
+
+export function getNextExpectedMeetingDate(group: {
+  rhythmType: string;
+  dayOfMonth: number | null;
+  weekOfMonth: number | null;
+  dayOfWeek: string | null;
+}): string | null {
+  const [next] = generateMeetingDates(group.rhythmType, group.dayOfMonth, group.weekOfMonth, group.dayOfWeek, 1);
+  return next ?? null;
 }

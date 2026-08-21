@@ -126,6 +126,7 @@ export type KitRow = {
   commentary: string | null;
   prayer_requests: string | null;
   gathering_prompt: string | null;
+  photo_url: string | null;
   created_at: string;
 };
 
@@ -141,6 +142,73 @@ type KitInsert = {
   commentary?: string | null;
   prayer_requests?: string | null;
   gathering_prompt?: string | null;
+  photo_url?: string | null;
+  created_at?: string;
+};
+
+export type KitAttendanceRow = {
+  id: string;
+  kit_id: string;
+  member_id: string;
+  gathered_at: string;
+};
+
+type KitAttendanceInsert = {
+  id?: string;
+  kit_id: string;
+  member_id: string;
+  gathered_at?: string;
+};
+
+export type FieldPostRow = {
+  id: string;
+  group_id: string;
+  host_id: string;
+  author_label: string;
+  body: string;
+  photo_url: string | null;
+  video_url: string | null;
+  created_at: string;
+};
+
+type FieldPostInsert = {
+  id?: string;
+  group_id: string;
+  host_id: string;
+  author_label: string;
+  body: string;
+  photo_url?: string | null;
+  video_url?: string | null;
+  created_at?: string;
+};
+
+export type FieldPostReactionRow = {
+  id: string;
+  post_id: string;
+  member_id: string;
+  created_at: string;
+};
+
+type FieldPostReactionInsert = {
+  id?: string;
+  post_id: string;
+  member_id: string;
+  created_at?: string;
+};
+
+export type FieldPostCommentRow = {
+  id: string;
+  post_id: string;
+  member_id: string;
+  body: string;
+  created_at: string;
+};
+
+type FieldPostCommentInsert = {
+  id?: string;
+  post_id: string;
+  member_id: string;
+  body: string;
   created_at?: string;
 };
 
@@ -175,6 +243,30 @@ export type Database = {
         Row: KitRow;
         Insert: KitInsert;
         Update: Partial<KitInsert>;
+        Relationships: [];
+      };
+      kit_attendance: {
+        Row: KitAttendanceRow;
+        Insert: KitAttendanceInsert;
+        Update: Partial<KitAttendanceInsert>;
+        Relationships: [];
+      };
+      field_posts: {
+        Row: FieldPostRow;
+        Insert: FieldPostInsert;
+        Update: Partial<FieldPostInsert>;
+        Relationships: [];
+      };
+      field_post_reactions: {
+        Row: FieldPostReactionRow;
+        Insert: FieldPostReactionInsert;
+        Update: Partial<FieldPostReactionInsert>;
+        Relationships: [];
+      };
+      field_post_comments: {
+        Row: FieldPostCommentRow;
+        Insert: FieldPostCommentInsert;
+        Update: Partial<FieldPostCommentInsert>;
         Relationships: [];
       };
     };

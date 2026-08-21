@@ -24,6 +24,9 @@ export default function TopNavBar() {
           <Link href="/start" className="font-inter text-warm text-base hover:text-black transition-colors">
             Start a Group
           </Link>
+          <Link href="/host/login" className="font-inter text-warm text-base hover:text-black transition-colors">
+            Host Login
+          </Link>
           <Link href="/about" className="font-inter text-warm text-base hover:text-black transition-colors">
             About
           </Link>
@@ -56,6 +59,9 @@ export default function TopNavBar() {
           </Link>
           <Link href="/start" className="font-inter text-warm text-lg" onClick={() => setMenuOpen(false)}>
             Start a Group
+          </Link>
+          <Link href="/host/login" className="font-inter text-warm text-lg" onClick={() => setMenuOpen(false)}>
+            Host Login
           </Link>
           <Link href="/about" className="font-inter text-warm text-lg" onClick={() => setMenuOpen(false)}>
             About

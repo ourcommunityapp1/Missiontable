@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { esc } from '@/lib/escapeHtml';
 import { Resend } from 'resend';
 
 function html(heading: string, body: string) {
@@ -114,7 +115,7 @@ export async function GET(request: Request) {
         to: member.email,
         subject: "You've been approved — welcome to your Mission Table group",
         html: `
-          <p>Hi ${member.name},</p>
+          <p>Hi ${esc(member.name)},</p>
           <p>Great news — your host has approved your request to join the Mission Table group!</p>
           <p>You can view your group page, see who else is in the group, and find the monthly kit here:</p>
           <p>
@@ -133,7 +134,7 @@ export async function GET(request: Request) {
 
   const memberName = member?.name ?? 'The member';
   return new NextResponse(
-    html('Member Approved ✓', `${memberName} has been approved and sent a welcome email with the group link.`),
+    html('Member Approved ✓', `${esc(memberName)} has been approved and sent a welcome email with the group link.`),
     { headers: { 'Content-Type': 'text/html; charset=utf-8' } },
   );
 }

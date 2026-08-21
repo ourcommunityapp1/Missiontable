@@ -1,6 +1,7 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
+import { esc } from '@/lib/escapeHtml';
 import { Resend } from 'resend';
 
 export type StartGroupResult =
@@ -82,7 +83,7 @@ export async function startGroup(formData: FormData): Promise<StartGroupResult> 
       to: email,
       subject: 'Your Mission Table group has been submitted',
       html: `
-        <p>Hi ${name},</p>
+        <p>Hi ${esc(name)},</p>
         <p>Thank you for submitting your Mission Table group! We'll review it and approve it shortly.</p>
         <p>Once approved, your group will be listed publicly and people can request to join.</p>
         <p><strong>Bookmark your host dashboard link:</strong></p>
@@ -113,12 +114,12 @@ export async function startGroup(formData: FormData): Promise<StartGroupResult> 
       html: `
         <p>A new group has been submitted and is waiting for your approval.</p>
         <table style="border-collapse:collapse">
-          <tr><td style="padding:4px 16px 4px 0"><strong>Group Name</strong></td><td>${groupName}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0"><strong>Country</strong></td><td>${countrySlug}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0"><strong>Host</strong></td><td>${name}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0"><strong>Host Email</strong></td><td>${email}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0"><strong>Type</strong></td><td>${groupType}</td></tr>
-          ${city ? `<tr><td style="padding:4px 16px 4px 0"><strong>Location</strong></td><td>${city}${state ? `, ${state}` : ''}</td></tr>` : ''}
+          <tr><td style="padding:4px 16px 4px 0"><strong>Group Name</strong></td><td>${esc(groupName)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0"><strong>Country</strong></td><td>${esc(countrySlug)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0"><strong>Host</strong></td><td>${esc(name)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0"><strong>Host Email</strong></td><td>${esc(email)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0"><strong>Type</strong></td><td>${esc(groupType)}</td></tr>
+          ${city ? `<tr><td style="padding:4px 16px 4px 0"><strong>Location</strong></td><td>${esc(city)}${state ? `, ${esc(state)}` : ''}</td></tr>` : ''}
         </table>
         <br>
         <a href="${approveUrl}" style="background:#000;color:#fff;padding:12px 24px;text-decoration:none;font-family:sans-serif;font-weight:bold;display:inline-block">

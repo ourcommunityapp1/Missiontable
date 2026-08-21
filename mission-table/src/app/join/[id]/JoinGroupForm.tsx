@@ -1,14 +1,26 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import Link from 'next/link';
 import type { GroupDetail } from '@/lib/queries';
 import { joinGroup } from './actions';
+import { track } from '@/lib/mixpanel';
 
 export default function JoinGroupForm({ group }: { group: GroupDetail }) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    track('join_group_page_viewed', {
+      group_id: group.id,
+      country_slug: group.countrySlug,
+      country_name: group.countryName,
+      group_type: group.groupType,
+      ...(group.name ? { group_name: group.name } : {}),
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -17,6 +29,18 @@ export default function JoinGroupForm({ group }: { group: GroupDetail }) {
     startTransition(async () => {
       const result = await joinGroup(group.id, formData);
       if (result.success) {
+        const city = (formData.get('city') as string)?.trim() || undefined;
+        const state = (formData.get('state') as string)?.trim() || undefined;
+        const church = (formData.get('church') as string)?.trim();
+        track('group_join_requested', {
+          group_id: group.id,
+          country_slug: group.countrySlug,
+          country_name: group.countryName,
+          group_type: group.groupType,
+          has_church: Boolean(church),
+          ...(city ? { city } : {}),
+          ...(state ? { state } : {}),
+        });
         setSuccess(true);
       } else {
         setError(result.error);
