@@ -1,7 +1,7 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
-import { getMembersForGroup } from '@/lib/queries';
+import { getMembersForGroup, getGroupHosts } from '@/lib/queries';
 import { esc } from '@/lib/escapeHtml';
 import { trackServer } from '@/lib/mixpanelServer';
 import type { KitRow } from '@/lib/database.types';
@@ -77,17 +77,10 @@ export async function resendKit(kitId: string, groupId: string, groupDisplayName
 
   if (!kit) throw new Error('Kit not found');
 
-  const { data: groupData } = await supabase
-    .from('groups')
-    .select('hosts (email)')
-    .eq('id', groupId)
-    .single() as unknown as { data: { hosts: { email: string } | { email: string }[] | null } | null };
-
-  const hostRaw = groupData?.hosts;
-  const hostEmail = (Array.isArray(hostRaw) ? hostRaw[0] : hostRaw)?.email ?? null;
+  const hostEmails = (await getGroupHosts(groupId)).map((h) => h.email).filter(Boolean);
 
   const members = await getMembersForGroup(groupId);
-  if (members.accepted.length === 0 && !hostEmail) return;
+  if (members.accepted.length === 0 && hostEmails.length === 0) return;
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   const dateLabel = new Date(kit.meeting_date + 'T00:00:00').toLocaleDateString('en-US', {
@@ -156,7 +149,7 @@ export async function resendKit(kitId: string, groupId: string, groupDisplayName
         resend: true,
       });
     }
-    if (hostEmail) {
+    for (const hostEmail of hostEmails) {
       await resend.emails.send({
         from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
         to: hostEmail,

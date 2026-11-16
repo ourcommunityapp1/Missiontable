@@ -2,6 +2,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { esc } from '@/lib/escapeHtml';
+import { getGroupHosts } from '@/lib/queries';
 import { Resend } from 'resend';
 
 export type JoinGroupResult =
@@ -23,15 +24,8 @@ export async function joinGroup(
     return { success: false, error: 'Please fill in all required fields.' };
   }
 
-  // Fetch host info from the group (server-side only)
-  const { data: groupData } = await supabase
-    .from('groups')
-    .select('hosts (email, name, host_token)')
-    .eq('id', groupId)
-    .single() as unknown as { data: { hosts: { email: string; name: string; host_token: string } | { email: string; name: string; host_token: string }[] | null } | null };
-
-  const hostRaw = groupData?.hosts;
-  const host = Array.isArray(hostRaw) ? hostRaw[0] : hostRaw;
+  // Fetch all hosts of the group — primary + co-hosts (server-side only)
+  const groupHosts = await getGroupHosts(groupId);
 
   // Upsert member on email
   const { data: member, error: memberError } = await supabase
@@ -72,7 +66,8 @@ export async function joinGroup(
   const locationLine = [city, state].filter(Boolean).join(', ');
 
   try {
-    if (host?.email) {
+    for (const host of groupHosts) {
+      if (!host.email) continue;
       const approveUrl = `https://missiontable.org/api/host/approve-member?token=${host.host_token}&membershipId=${membership.id}`;
       await resend.emails.send({
         from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
