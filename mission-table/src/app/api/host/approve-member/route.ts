@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { esc } from '@/lib/escapeHtml';
+import { getGroupHosts } from '@/lib/queries';
 import { Resend } from 'resend';
 
 function html(heading: string, body: string) {
@@ -52,28 +53,18 @@ export async function GET(request: Request) {
     });
   }
 
-  // Fetch group host_id
-  const { data: group } = await supabase
-    .from('groups')
-    .select('host_id')
-    .eq('id', membership.group_id)
-    .single() as unknown as { data: { host_id: string } | null };
+  // Fetch the group's hosts (primary + co-hosts)
+  const groupHosts = await getGroupHosts(membership.group_id);
 
-  if (!group) {
+  if (groupHosts.length === 0) {
     return new NextResponse(html('Not Found', 'Group not found.'), {
       status: 404,
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });
   }
 
-  // Verify token matches host
-  const { data: hostData } = await supabase
-    .from('hosts')
-    .select('host_token')
-    .eq('id', group.host_id)
-    .single() as unknown as { data: { host_token: string } | null };
-
-  if (!hostData || hostData.host_token !== token) {
+  // Verify token belongs to one of the group's hosts
+  if (!groupHosts.some((h) => h.host_token === token)) {
     return new NextResponse(html('Unauthorized', 'This link is not valid for this group.'), {
       status: 401,
       headers: { 'Content-Type': 'text/html; charset=utf-8' },

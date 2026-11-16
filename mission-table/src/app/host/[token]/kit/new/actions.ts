@@ -1,7 +1,7 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
-import { getMembersForGroup } from '@/lib/queries';
+import { getMembersForGroup, getGroupHosts } from '@/lib/queries';
 import { esc } from '@/lib/escapeHtml';
 import { trackServer } from '@/lib/mixpanelServer';
 import { Resend } from 'resend';
@@ -55,16 +55,9 @@ export async function createKit(
   // Email all accepted members + host copy
   const members = await getMembersForGroup(groupId);
 
-  const { data: groupData } = await supabase
-    .from('groups')
-    .select('hosts (email)')
-    .eq('id', groupId)
-    .single() as unknown as { data: { hosts: { email: string } | { email: string }[] | null } | null };
+  const hostEmails = (await getGroupHosts(groupId)).map((h) => h.email).filter(Boolean);
 
-  const hostRaw = groupData?.hosts;
-  const hostEmail = (Array.isArray(hostRaw) ? hostRaw[0] : hostRaw)?.email ?? null;
-
-  if (members.accepted.length > 0 || hostEmail) {
+  if (members.accepted.length > 0 || hostEmails.length > 0) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     const dateLabel = new Date(meetingDate + 'T00:00:00').toLocaleDateString('en-US', {
       month: 'long',
@@ -132,7 +125,7 @@ export async function createKit(
           resend: false,
         });
       }
-      if (hostEmail) {
+      for (const hostEmail of hostEmails) {
         await resend.emails.send({
           from: `Mission Table <noreply@requesttojoin.missiontable.org>`,
           to: hostEmail,

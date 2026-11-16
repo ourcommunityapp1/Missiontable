@@ -212,6 +212,18 @@ type FieldPostCommentInsert = {
   created_at?: string;
 };
 
+type GroupCohostRow = {
+  group_id: string;
+  host_id: string;
+  created_at: string;
+};
+
+type GroupCohostInsert = {
+  group_id: string;
+  host_id: string;
+  created_at?: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -225,6 +237,12 @@ export type Database = {
         Row: GroupRow;
         Insert: GroupInsert;
         Update: Partial<GroupInsert>;
+        Relationships: [];
+      };
+      group_cohosts: {
+        Row: GroupCohostRow;
+        Insert: GroupCohostInsert;
+        Update: Partial<GroupCohostInsert>;
         Relationships: [];
       };
       members: {

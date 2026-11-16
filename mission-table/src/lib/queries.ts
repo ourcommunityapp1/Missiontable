@@ -411,10 +411,21 @@ export async function getHostByToken(token: string): Promise<HostDashboardData |
 
   if (error || !host) return null;
 
-  const { data: groupsData } = await supabase
+  // Groups this host owns as primary host, plus any they co-host
+  const { data: cohostRows } = await supabase
+    .from('group_cohosts')
+    .select('group_id')
+    .eq('host_id', host.id) as unknown as { data: { group_id: string }[] | null };
+  const cohostedIds = (cohostRows ?? []).map((r) => r.group_id);
+
+  let groupsQuery = supabase
     .from('groups')
-    .select('id, name, country_slug, status, chat_link, group_type, city, state, max_size, start_date, rhythm_type, day_of_month, week_of_month, day_of_week, meeting_time, timezone')
-    .eq('host_id', host.id)
+    .select('id, name, country_slug, status, chat_link, group_type, city, state, max_size, start_date, rhythm_type, day_of_month, week_of_month, day_of_week, meeting_time, timezone');
+  groupsQuery = cohostedIds.length > 0
+    ? groupsQuery.or(`host_id.eq.${host.id},id.in.(${cohostedIds.join(',')})`)
+    : groupsQuery.eq('host_id', host.id);
+
+  const { data: groupsData } = await groupsQuery
     .neq('status', 'inactive')
     .order('created_at', { ascending: true }) as unknown as { data: RawGroupForHost[] | null };
 
@@ -665,4 +676,39 @@ export function getNextExpectedMeetingDate(group: {
 }): string | null {
   const [next] = generateMeetingDates(group.rhythmType, group.dayOfMonth, group.weekOfMonth, group.dayOfWeek, 1);
   return next ?? null;
+}
+
+export type GroupHost = {
+  id: string;
+  name: string;
+  email: string;
+  host_token: string;
+};
+
+/**
+ * All hosts of a group: the primary host (groups.host_id) first, then co-hosts.
+ * Server-side only — includes host tokens.
+ */
+export async function getGroupHosts(groupId: string): Promise<GroupHost[]> {
+  const { data: group } = await supabase
+    .from('groups')
+    .select('host_id')
+    .eq('id', groupId)
+    .single() as unknown as { data: { host_id: string } | null };
+
+  if (!group) return [];
+
+  const { data: cohostRows } = await supabase
+    .from('group_cohosts')
+    .select('host_id')
+    .eq('group_id', groupId) as unknown as { data: { host_id: string }[] | null };
+
+  const ids = Array.from(new Set([group.host_id, ...(cohostRows ?? []).map((r) => r.host_id)]));
+
+  const { data: hosts } = await supabase
+    .from('hosts')
+    .select('id, name, email, host_token')
+    .in('id', ids) as unknown as { data: GroupHost[] | null };
+
+  return (hosts ?? []).sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
 }
