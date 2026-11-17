@@ -1,12 +1,22 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
+import { authorizeHostForGroup } from '@/lib/queries';
 
 export type UpdateKitResult =
   | { success: true }
   | { success: false; error: string };
 
-export async function updateKit(kitId: string, formData: FormData): Promise<UpdateKitResult> {
+export async function updateKit(token: string, kitId: string, formData: FormData): Promise<UpdateKitResult> {
+  const { data: existing } = await supabase
+    .from('kits')
+    .select('group_id')
+    .eq('id', kitId)
+    .maybeSingle() as unknown as { data: { group_id: string } | null };
+  if (!existing || !(await authorizeHostForGroup(token, existing.group_id))) {
+    return { success: false, error: 'Could not verify your host account.' };
+  }
+
   const meetingDate = formData.get('meeting_date') as string;
   const recipeName = (formData.get('recipe_name') as string)?.trim() || null;
   const recipeUrl = (formData.get('recipe_url') as string)?.trim() || null;

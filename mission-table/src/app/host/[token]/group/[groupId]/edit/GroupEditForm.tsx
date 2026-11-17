@@ -41,7 +41,7 @@ export default function GroupEditForm({ group, token }: { group: HostGroup; toke
     setErrorMsg('');
     const formData = new FormData(e.currentTarget);
     formData.set('rhythm_type', rhythmType);
-    const result = await updateGroup(group.id, formData);
+    const result = await updateGroup(token, group.id, formData);
     if ('error' in result) {
       setStatus('error');
       setErrorMsg(result.error);

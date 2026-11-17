@@ -1,7 +1,7 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
-import { getMembersForGroup, getGroupHosts } from '@/lib/queries';
+import { getMembersForGroup, getGroupHosts, authorizeHostForGroup } from '@/lib/queries';
 import { esc } from '@/lib/escapeHtml';
 import { trackServer } from '@/lib/mixpanelServer';
 import { Resend } from 'resend';
@@ -16,6 +16,10 @@ export async function createKit(
   groupDisplayName: string,
   formData: FormData,
 ): Promise<CreateKitResult> {
+  if (!(await authorizeHostForGroup(token, groupId))) {
+    return { success: false, error: 'Could not verify your host account.' };
+  }
+
   const meetingDate = formData.get('meeting_date') as string;
   const recipeName = (formData.get('recipe_name') as string)?.trim() || null;
   const recipeUrl = (formData.get('recipe_url') as string)?.trim() || null;

@@ -1,13 +1,15 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
-import { getMembersForGroup, getGroupHosts } from '@/lib/queries';
+import { getMembersForGroup, getGroupHosts, authorizeHostForGroup } from '@/lib/queries';
 import { esc } from '@/lib/escapeHtml';
 import { trackServer } from '@/lib/mixpanelServer';
 import type { KitRow } from '@/lib/database.types';
 import { Resend } from 'resend';
 
-export async function updateChatLink(groupId: string, chatLink: string | null) {
+export async function updateChatLink(token: string, groupId: string, chatLink: string | null) {
+  if (!(await authorizeHostForGroup(token, groupId))) throw new Error('Not authorized');
+
   const { error } = await supabase
     .from('groups')
     .update({ chat_link: chatLink || null })
@@ -16,7 +18,9 @@ export async function updateChatLink(groupId: string, chatLink: string | null) {
   if (error) throw new Error('Failed to update chat link');
 }
 
-export async function approveMember(membershipId: string, groupId: string) {
+export async function approveMember(token: string, membershipId: string, groupId: string) {
+  if (!(await authorizeHostForGroup(token, groupId))) throw new Error('Not authorized');
+
   const { error } = await supabase
     .from('memberships')
     .update({ status: 'accepted', updated_at: new Date().toISOString() })
@@ -68,14 +72,16 @@ export async function approveMember(membershipId: string, groupId: string) {
   }
 }
 
-export async function resendKit(kitId: string, groupId: string, groupDisplayName: string) {
+export async function resendKit(token: string, kitId: string, groupId: string, groupDisplayName: string) {
+  if (!(await authorizeHostForGroup(token, groupId))) throw new Error('Not authorized');
+
   const { data: kit } = await supabase
     .from('kits')
     .select('*')
     .eq('id', kitId)
     .single() as unknown as { data: KitRow | null };
 
-  if (!kit) throw new Error('Kit not found');
+  if (!kit || kit.group_id !== groupId) throw new Error('Kit not found');
 
   const hostEmails = (await getGroupHosts(groupId)).map((h) => h.email).filter(Boolean);
 

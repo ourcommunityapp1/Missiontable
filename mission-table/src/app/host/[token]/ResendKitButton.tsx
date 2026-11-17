@@ -4,17 +4,18 @@ import { useState } from 'react';
 import { resendKit } from './actions';
 
 type Props = {
+  token: string;
   kitId: string;
   groupId: string;
   groupDisplayName: string;
 };
 
-export default function ResendKitButton({ kitId, groupId, groupDisplayName }: Props) {
+export default function ResendKitButton({ token, kitId, groupId, groupDisplayName }: Props) {
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
 
   async function handleClick() {
     setState('sending');
-    await resendKit(kitId, groupId, groupDisplayName);
+    await resendKit(token, kitId, groupId, groupDisplayName);
     setState('sent');
     setTimeout(() => setState('idle'), 4000);
   }
