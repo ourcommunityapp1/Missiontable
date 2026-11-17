@@ -156,7 +156,7 @@ export default async function GroupDetailPage({
         </div>
 
         {/* Hero */}
-        <div className="relative border-2 border-black overflow-hidden mb-8 aspect-[16/9] md:aspect-[16/6] min-h-[220px]">
+        <div className="relative border-2 border-black overflow-hidden mb-8 h-[260px] md:h-auto md:aspect-[16/6] md:min-h-[220px]">
           {countryImage && (
             <Image src={countryImage} alt={group.countryName} fill unoptimized className="object-cover" />
           )}

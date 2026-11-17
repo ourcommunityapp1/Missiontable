@@ -14,7 +14,7 @@ export default function Footer() {
             MISSION TABLE
           </Link>
           <p className="font-inter text-muted text-base">
-            © 2024 Mission Table. A record of movement.
+            © {new Date().getFullYear()} Mission Table. A record of movement.
           </p>
         </div>
 
