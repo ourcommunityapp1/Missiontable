@@ -744,3 +744,123 @@ export async function authorizeHostForGroup(token: string, groupId: string): Pro
 
   return count ? host.id : null;
 }
+
+/** Records a member opening their group page. Never throws: analytics must not break the page. */
+export async function recordGroupPageView(groupId: string, memberId: string): Promise<void> {
+  try {
+    await supabase.from('group_page_views').insert({ group_id: groupId, member_id: memberId });
+  } catch (err) {
+    console.error('recordGroupPageView failed:', err);
+  }
+}
+
+// Member visits are recorded in group_page_views from this date on.
+export const MEMBER_VISIT_TRACKING_START = '2026-11-17';
+
+export type ActivityMonth = {
+  key: string; // YYYY-MM
+  label: string; // e.g. "Nov 2026"
+  newMembers: number;
+  meal: string | null; // recipe name (or "Meal sent") if a kit was scheduled that month
+  gathered: number; // "We gathered" marks on that month's meal
+  reactions: number;
+  comments: number;
+  memberVisitors: number | null; // distinct members who opened the group page; null = not tracked yet
+  visits: number | null;
+};
+
+export type GroupActivity = {
+  members: number;
+  pending: number;
+  mealsSent: number;
+  nextGathering: string | null; // YYYY-MM-DD
+  nextMealSent: boolean;
+  months: ActivityMonth[]; // newest first
+};
+
+function monthKey(iso: string): string {
+  return iso.slice(0, 7);
+}
+
+/** Month-by-month activity for the host dashboard (last 6 months, never before the group started). */
+export async function getGroupActivity(group: HostGroup): Promise<GroupActivity> {
+  const now = new Date();
+  const keys: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    const key = d.toISOString().slice(0, 7);
+    if (key < monthKey(group.start_date)) break;
+    keys.push(key);
+  }
+  if (keys.length === 0) keys.push(now.toISOString().slice(0, 7));
+  const since = `${keys[keys.length - 1]}-01`;
+
+  const [{ data: memberships }, { data: kits }, { data: posts }, { data: views }] = await Promise.all([
+    supabase.from('memberships').select('status, requested_at').eq('group_id', group.id),
+    supabase.from('kits').select('id, meeting_date, recipe_name').eq('group_id', group.id),
+    supabase.from('field_posts').select('id').eq('group_id', group.id),
+    supabase.from('group_page_views').select('member_id, viewed_at').eq('group_id', group.id).gte('viewed_at', since),
+  ]) as unknown as [
+    { data: { status: string; requested_at: string }[] | null },
+    { data: { id: string; meeting_date: string; recipe_name: string | null }[] | null },
+    { data: { id: string }[] | null },
+    { data: { member_id: string; viewed_at: string }[] | null },
+  ];
+
+  const kitList = kits ?? [];
+  const postIds = (posts ?? []).map((p) => p.id);
+  const kitIds = kitList.map((k) => k.id);
+
+  const [{ data: attendance }, { data: reactions }, { data: comments }] = await Promise.all([
+    kitIds.length
+      ? supabase.from('kit_attendance').select('kit_id').in('kit_id', kitIds)
+      : Promise.resolve({ data: [] }),
+    postIds.length
+      ? supabase.from('field_post_reactions').select('created_at').in('post_id', postIds).gte('created_at', since)
+      : Promise.resolve({ data: [] }),
+    postIds.length
+      ? supabase.from('field_post_comments').select('created_at').in('post_id', postIds).gte('created_at', since)
+      : Promise.resolve({ data: [] }),
+  ]) as unknown as [
+    { data: { kit_id: string }[] | null },
+    { data: { created_at: string }[] | null },
+    { data: { created_at: string }[] | null },
+  ];
+
+  const gatheredByKit: Record<string, number> = {};
+  for (const a of attendance ?? []) gatheredByKit[a.kit_id] = (gatheredByKit[a.kit_id] ?? 0) + 1;
+
+  const trackingStartKey = monthKey(MEMBER_VISIT_TRACKING_START);
+  const months: ActivityMonth[] = keys.map((key) => {
+    const kit = kitList.find((k) => monthKey(k.meeting_date) === key);
+    const monthViews = (views ?? []).filter((v) => monthKey(v.viewed_at) === key);
+    const tracked = key >= trackingStartKey;
+    return {
+      key,
+      label: new Date(`${key}-01T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }),
+      newMembers: (memberships ?? []).filter((m) => m.status === 'accepted' && monthKey(m.requested_at) === key).length,
+      meal: kit ? (kit.recipe_name ?? 'Meal sent') : null,
+      gathered: kit ? (gatheredByKit[kit.id] ?? 0) : 0,
+      reactions: (reactions ?? []).filter((r) => monthKey(r.created_at) === key).length,
+      comments: (comments ?? []).filter((c) => monthKey(c.created_at) === key).length,
+      memberVisitors: tracked ? new Set(monthViews.map((v) => v.member_id)).size : null,
+      visits: tracked ? monthViews.length : null,
+    };
+  });
+
+  const nextGathering = getNextExpectedMeetingDate({
+    rhythmType: group.rhythm_type,
+    dayOfMonth: group.day_of_month,
+    weekOfMonth: group.week_of_month,
+    dayOfWeek: group.day_of_week,
+  });
+
+  return {
+    members: (memberships ?? []).filter((m) => m.status === 'accepted').length,
+    pending: (memberships ?? []).filter((m) => m.status === 'pending').length,
+    mealsSent: kitList.length, // a kit is emailed to members when it's created
+    nextGathering,
+    nextMealSent: nextGathering ? kitList.some((k) => k.meeting_date === nextGathering) : false,
+    months,
+  };
+}

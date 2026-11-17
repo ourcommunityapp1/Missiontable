@@ -224,6 +224,20 @@ type GroupCohostInsert = {
   created_at?: string;
 };
 
+type GroupPageViewRow = {
+  id: string;
+  group_id: string;
+  member_id: string;
+  viewed_at: string;
+};
+
+type GroupPageViewInsert = {
+  id?: string;
+  group_id: string;
+  member_id: string;
+  viewed_at?: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -243,6 +257,12 @@ export type Database = {
         Row: GroupCohostRow;
         Insert: GroupCohostInsert;
         Update: Partial<GroupCohostInsert>;
+        Relationships: [];
+      };
+      group_page_views: {
+        Row: GroupPageViewRow;
+        Insert: GroupPageViewInsert;
+        Update: Partial<GroupPageViewInsert>;
         Relationships: [];
       };
       members: {

@@ -17,7 +17,8 @@ begin
     where schemaname = 'public'
       and tablename in ('hosts','groups','group_cohosts','members','memberships','kits',
                         'kit_attendance','field_posts','field_post_reactions',
-                        'field_post_comments','group_chat_messages')
+                        'field_post_comments','group_chat_messages',
+                        'group_page_views')
   loop
     execute format('drop policy %I on public.%I', p.policyname, p.tablename);
   end loop;

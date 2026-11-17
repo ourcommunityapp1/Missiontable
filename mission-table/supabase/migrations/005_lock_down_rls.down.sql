@@ -31,3 +31,5 @@ create policy "Anyone can update a member" on members for update using (true) wi
 create policy "Memberships are publicly readable" on memberships for select using (true);
 create policy "Anyone can create a membership" on memberships for insert with check (true);
 create policy "Anyone can update memberships" on memberships for update using (true) with check (true);
+create policy "Anyone can record a group page view" on group_page_views for insert with check (true);
+create policy "Group page views are readable" on group_page_views for select using (true);

@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import { getHostByToken, getMembersForGroup, getKitsForGroup, getFieldPostsForGroup, type HostGroup } from '@/lib/queries';
 import { approveMember, updateChatLink } from './actions';
 import ResendKitButton from './ResendKitButton';
+import GroupActivity from './GroupActivity';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,9 @@ async function GroupSection({ group, token, hostName }: { group: HostGroup; toke
 
   return (
     <div className="flex flex-col gap-12">
+
+      {/* ── Activity ──────────────────────────────────── */}
+      <GroupActivity group={group} token={token} />
 
       {/* ── Your Group ────────────────────────────────── */}
       <section>

@@ -13,6 +13,7 @@ import {
   getFieldPostsForGroup,
   getNextExpectedMeetingDate,
   isMeetingDatePast,
+  recordGroupPageView,
 } from '@/lib/queries';
 import MemberAccessForm from './MemberAccessForm';
 import GroupPageTracker from './GroupPageTracker';
@@ -37,6 +38,7 @@ export default async function GroupDetailPage({
 
   const currentMemberId = token ? await getMemberIdForToken(id, token) : null;
   const isMember = currentMemberId !== null;
+  if (currentMemberId) await recordGroupPageView(id, currentMemberId);
 
   const [members, kits, fieldPosts] = isMember
     ? await Promise.all([getMembersForGroup(id), getKitsForGroup(id), getFieldPostsForGroup(id)])
