@@ -32,7 +32,7 @@ export type SearchableGroup = {
 export async function getAllGroupsForSearch(): Promise<SearchableGroup[]> {
   const { data } = await supabase
     .from('groups')
-    .select(`id, name, group_type, country_slug, hosts (name)`)
+    .select(`id, name, group_type, country_slug, hosts!groups_host_id_fkey (name)`)
     .eq('status', 'active') as unknown as {
       data: {
         id: string;
@@ -245,7 +245,7 @@ export async function getGroupById(id: string): Promise<GroupDetail | null> {
       timezone,
       max_size,
       start_date,
-      hosts (
+      hosts!groups_host_id_fkey (
         name
       )
     `)
@@ -302,7 +302,7 @@ export async function getGroupsForCountry(slug: string): Promise<DisplayGroup[]>
       meeting_time,
       timezone,
       max_size,
-      hosts (
+      hosts!groups_host_id_fkey (
         name
       )
     `)
