@@ -27,7 +27,7 @@ export default function KitEditForm({ token, kit, meetingDates }: Props) {
     setError('');
     setSubmitting(true);
     const formData = new FormData(e.currentTarget);
-    const result = await updateKit(kit.id, formData);
+    const result = await updateKit(token, kit.id, formData);
     setSubmitting(false);
     if (result.success) {
       router.push(`/host/${token}`);

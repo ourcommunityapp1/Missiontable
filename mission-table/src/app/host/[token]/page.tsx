@@ -69,7 +69,7 @@ async function GroupSection({ group, token, hostName }: { group: HostGroup; toke
             action={async (formData: FormData) => {
               'use server';
               const link = (formData.get('chat_link') as string)?.trim() || null;
-              await updateChatLink(group.id, link);
+              await updateChatLink(token, group.id, link);
               revalidatePath(`/host/${token}`);
             }}
             className="flex gap-3 items-end border-t-2 border-black pt-4"
@@ -124,7 +124,7 @@ async function GroupSection({ group, token, hostName }: { group: HostGroup; toke
                   <form
                     action={async () => {
                       'use server';
-                      await approveMember(m.membershipId, group.id);
+                      await approveMember(token, m.membershipId, group.id);
                       revalidatePath(`/host/${token}`);
                     }}
                   >
@@ -207,6 +207,7 @@ async function GroupSection({ group, token, hostName }: { group: HostGroup; toke
                     Edit →
                   </Link>
                   <ResendKitButton
+                    token={token}
                     kitId={kit.id}
                     groupId={group.id}
                     groupDisplayName={groupDisplayName}

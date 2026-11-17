@@ -1,6 +1,7 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
+import { authorizeHostForGroup } from '@/lib/queries';
 import type { RhythmType } from '@/lib/database.types';
 
 export type UpdateGroupResult =
@@ -8,9 +9,14 @@ export type UpdateGroupResult =
   | { success: false; error: string };
 
 export async function updateGroup(
+  token: string,
   groupId: string,
   formData: FormData,
 ): Promise<UpdateGroupResult> {
+  if (!(await authorizeHostForGroup(token, groupId))) {
+    return { success: false, error: 'Could not verify your host account.' };
+  }
+
   const name = (formData.get('name') as string)?.trim() || null;
   const city = (formData.get('city') as string)?.trim() || null;
   const state = (formData.get('state') as string)?.trim() || null;

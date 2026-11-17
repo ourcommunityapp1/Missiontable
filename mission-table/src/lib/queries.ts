@@ -712,3 +712,35 @@ export async function getGroupHosts(groupId: string): Promise<GroupHost[]> {
 
   return (hosts ?? []).sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
 }
+
+/**
+ * Returns the host's id if `token` belongs to the primary host or a co-host of
+ * `groupId`, otherwise null. Every host server action must call this: server
+ * actions are public endpoints and can be invoked with arbitrary arguments.
+ */
+export async function authorizeHostForGroup(token: string, groupId: string): Promise<string | null> {
+  if (!token || !groupId) return null;
+
+  const { data: host } = await supabase
+    .from('hosts')
+    .select('id')
+    .eq('host_token', token)
+    .maybeSingle() as unknown as { data: { id: string } | null };
+  if (!host) return null;
+
+  const { data: group } = await supabase
+    .from('groups')
+    .select('host_id')
+    .eq('id', groupId)
+    .maybeSingle() as unknown as { data: { host_id: string } | null };
+  if (!group) return null;
+  if (group.host_id === host.id) return host.id;
+
+  const { count } = await supabase
+    .from('group_cohosts')
+    .select('*', { count: 'exact', head: true })
+    .eq('group_id', groupId)
+    .eq('host_id', host.id) as unknown as { count: number | null };
+
+  return count ? host.id : null;
+}
