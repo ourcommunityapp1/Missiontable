@@ -26,6 +26,9 @@ export async function createFieldPost(
 
   if (!authorLabel) return { success: false, error: 'Please add who this update is from.' };
   if (!body) return { success: false, error: 'Please write an update.' };
+  const isWebLink = (v: string) => /^https?:\/\/\S+$/i.test(v);
+  if (photoUrl && !isWebLink(photoUrl)) return { success: false, error: 'The photo link should start with https://' };
+  if (videoUrl && !isWebLink(videoUrl)) return { success: false, error: 'The video link should start with https://' };
 
   const { data: post, error } = await supabase
     .from('field_posts')

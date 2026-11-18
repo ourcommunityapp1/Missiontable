@@ -5,12 +5,21 @@ import type { GroupChatMessageRow } from './database.types';
 import type { ChatAs, ChatMessage, ChatPage, ChatRole } from './chatTypes';
 import { CHAT_MAX_LENGTH } from './chatTypes';
 
+/**
+ * Group chat ships switched off until its database migration (008) is applied
+ * and tested. Turn it on with GROUP_CHAT=on in the hosting environment.
+ */
+export function chatEnabled(): boolean {
+  return process.env.GROUP_CHAT === 'on';
+}
+
 /** Who is reading or writing: a member (member_token) or a host/co-host (host_token) of the group. */
 export type ChatViewer = { kind: ChatAs; id: string; token: string; groupId: string };
 
 const UUID = /^[0-9a-f-]{36}$/i;
 
 export async function resolveChatViewer(groupId: unknown, token: unknown, as: unknown): Promise<ChatViewer | null> {
+  if (!chatEnabled()) return null;
   if (typeof groupId !== 'string' || typeof token !== 'string' || !UUID.test(groupId) || !token) return null;
   if (as === 'host') {
     const hostId = await authorizeHostForGroup(token, groupId);

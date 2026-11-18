@@ -25,7 +25,7 @@ import type { MemberLoopData } from './loopTypes';
 import { localNow, gatheringOnOrAfter, gatheringBefore, getRsvps } from '@/lib/gathering';
 import { getTablePosts, getInvitesForMember } from '@/lib/memberApp';
 import { bestChurchLabel } from '@/lib/people';
-import { getChatUnread } from '@/lib/chat';
+import { getChatUnread, chatEnabled } from '@/lib/chat';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,7 +98,7 @@ export default async function GroupDetailPage({
       next ? getRsvps(id, next) : Promise.resolve({ in: [] as string[], out: [] as string[] }),
       getTablePosts(id),
       getInvitesForMember(id, currentMemberId, today),
-      getChatUnread(id, currentMemberId),
+      chatEnabled() ? getChatUnread(id, currentMemberId) : Promise.resolve(0),
     ]);
     chatUnread = unread;
     const churches = members.accepted.map((m) => m.church);
@@ -278,6 +278,7 @@ export default async function GroupDetailPage({
             chatLink={group.chat_link}
             loop={loop!}
             chatUnread={chatUnread}
+            chatEnabled={chatEnabled()}
             infoSlot={
               <div className="max-w-[640px] mb-8">
                 <p className="font-inter text-base text-warm mb-8">{description}</p>

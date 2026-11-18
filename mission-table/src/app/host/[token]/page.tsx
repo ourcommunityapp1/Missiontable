@@ -12,7 +12,7 @@ import {
   getAttendanceForKits,
 } from '@/lib/queries';
 import { getHostLoopState } from '@/lib/gathering';
-import { getChatUnread } from '@/lib/chat';
+import { getChatUnread, chatEnabled } from '@/lib/chat';
 import { TABS, type TabId, type DashboardData, formatDay } from './_tabs/shared';
 import OverviewTab from './_tabs/OverviewTab';
 import ChatTab from './_tabs/ChatTab';
@@ -64,7 +64,8 @@ export default async function HostDashboardPage({
   }
 
   const group = groups.find((g) => g.id === sp.group) ?? groups[0];
-  const tab: TabId = TABS.some((t) => t.id === sp.tab) ? (sp.tab as TabId) : 'overview';
+  const tabs = TABS.filter((t) => t.id !== 'chat' || chatEnabled());
+  const tab: TabId = tabs.some((t) => t.id === sp.tab) ? (sp.tab as TabId) : 'overview';
   const multiGroup = groups.length > 1;
 
   const hrefFor = (groupId: string, t: TabId) => {
@@ -85,7 +86,7 @@ export default async function HostDashboardPage({
   const [attendance, loop, chatUnread] = await Promise.all([
     getAttendanceForKits(kits.map((k) => k.id)),
     getHostLoopState(group, host.name.split(/\s+/)[0], members.accepted),
-    tab === 'chat' ? Promise.resolve(0) : getChatUnread(group.id, host.id),
+    tab === 'chat' || !chatEnabled() ? Promise.resolve(0) : getChatUnread(group.id, host.id),
   ]);
   const gatheredByKit = Object.fromEntries(Object.entries(attendance).map(([id, a]) => [id, a.count]));
 
@@ -152,7 +153,7 @@ export default async function HostDashboardPage({
 
         <nav id="dashboard-tabs" aria-label="Dashboard sections" className="overflow-x-auto overflow-y-hidden overscroll-x-contain no-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
           <ul className="flex gap-1.5 w-max min-w-full md:w-auto md:flex-wrap border-b-2 border-black">
-            {TABS.map((t) => {
+            {tabs.map((t) => {
               const current = t.id === tab;
               const badge =
                 t.id === 'people' && members.pending.length > 0 ? String(members.pending.length)

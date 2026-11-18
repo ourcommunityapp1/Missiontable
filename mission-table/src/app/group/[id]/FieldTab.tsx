@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import VideoEmbed from '@/components/VideoEmbed';
 import type { FieldPostWithEngagement } from '@/lib/queries';
 import { toggleFieldPostReaction, addFieldPostComment, deleteFieldPostComment } from './actions';
 
@@ -93,31 +94,15 @@ export default function FieldTab({ posts, token, currentMemberId, countryName }:
 
         return (
           <article key={post.id} className="border-2 border-black bg-cream">
-            {(post.photo_url || post.video_url) && (
-              post.video_url ? (
-                <a
-                  href={post.video_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="relative w-full h-[220px] border-b-2 border-black block bg-ink"
-                  style={{ backgroundColor: '#1C1B1B' }}
-                  aria-label={`Watch video from ${post.author_label}`}
-                >
-                  {post.photo_url && <Image src={post.photo_url} alt={post.author_label} fill unoptimized className="object-cover" />}
-                  <div className="absolute inset-0 bg-black/35" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-14 h-14 rounded-full bg-cream/95 border-2 border-black flex items-center justify-center">
-                      <svg viewBox="0 0 24 24" fill="#1C1B1B" className="w-4 h-4 ml-0.5"><path d="M8 5v14l11-7z" /></svg>
-                    </div>
-                  </div>
-                  <span className="absolute left-3 bottom-3 font-inter text-xs font-semibold text-cream">Watch Video ↗</span>
-                </a>
-              ) : (
-                <div className="relative w-full h-[220px] border-b-2 border-black">
-                  <Image src={post.photo_url!} alt={post.author_label} fill unoptimized className="object-cover" />
-                </div>
-              )
-            )}
+            {post.video_url ? (
+              <div className="border-b-2 border-black">
+                <VideoEmbed url={post.video_url} posterUrl={post.photo_url} title={post.author_label} />
+              </div>
+            ) : post.photo_url ? (
+              <div className="relative w-full h-[220px] border-b-2 border-black">
+                <Image src={post.photo_url} alt={post.author_label} fill unoptimized className="object-cover" />
+              </div>
+            ) : null}
 
             <div className="p-5 flex flex-col gap-3">
               <div className="flex items-baseline justify-between gap-2">

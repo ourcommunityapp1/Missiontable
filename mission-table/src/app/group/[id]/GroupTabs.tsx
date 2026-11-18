@@ -33,6 +33,8 @@ type Props = {
   loop: MemberLoopData;
   /** Chat messages from others since this member last opened the chat. */
   chatUnread: number;
+  /** Group chat is behind a switch until it launches. */
+  chatEnabled: boolean;
   infoSlot?: React.ReactNode;
 };
 
@@ -46,14 +48,15 @@ const TABS: { key: Tab; label: string; short: string }[] = [
   { key: 'members', label: 'Members', short: 'Members' },
 ];
 
-function initialTab(t: string | null): Tab {
+function initialTab(t: string | null, chat: boolean): Tab {
   if (t === 'meals') return 'month';
+  if (t === 'chat' && !chat) return 'month';
   return (TABS.find((x) => x.key === t)?.key ?? 'month') as Tab;
 }
 
 export default function GroupTabs(props: Props) {
   const { loop, token } = props;
-  const [active, setActive] = useState<Tab>(() => initialTab(loop.initialTab));
+  const [active, setActive] = useState<Tab>(() => initialTab(loop.initialTab, props.chatEnabled));
   const [myRsvp, setMyRsvp] = useState(() =>
     loop.autoRsvp && loop.autoRsvp.date === loop.nextDate ? loop.autoRsvp.status : loop.myRsvp,
   );
@@ -67,7 +70,7 @@ export default function GroupTabs(props: Props) {
     loop.autoRsvp ? null : loop.received.find((i) => i.myStatus === 'invited' && !i.mySeen) ?? null,
   );
   const handledLink = useRef(false);
-  const [chatUnread, setChatUnread] = useState(() => (initialTab(loop.initialTab) === 'chat' ? 0 : props.chatUnread));
+  const [chatUnread, setChatUnread] = useState(() => (initialTab(loop.initialTab, props.chatEnabled) === 'chat' ? 0 : props.chatUnread));
 
   const pendingInvites = loop.received.filter((i) => i.myStatus === 'invited').length;
 
@@ -136,7 +139,7 @@ export default function GroupTabs(props: Props) {
   return (
     <div className="max-w-[820px]">
       <div role="tablist" aria-label="Group sections" className="flex justify-between sm:justify-start sm:gap-6 border-b-2 border-black mb-6">
-        {TABS.map((tab) => (
+        {TABS.filter((tab) => tab.key !== 'chat' || props.chatEnabled).map((tab) => (
           <button
             key={tab.key}
             type="button"
