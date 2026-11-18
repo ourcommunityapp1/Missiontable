@@ -12,8 +12,10 @@ import {
   getAttendanceForKits,
 } from '@/lib/queries';
 import { getHostLoopState } from '@/lib/gathering';
+import { getChatUnread } from '@/lib/chat';
 import { TABS, type TabId, type DashboardData, formatDay } from './_tabs/shared';
 import OverviewTab from './_tabs/OverviewTab';
+import ChatTab from './_tabs/ChatTab';
 import ScrollActiveTab from './_tabs/ScrollActiveTab';
 import FieldTab from './_tabs/FieldTab';
 import MealsTab from './_tabs/MealsTab';
@@ -25,6 +27,7 @@ export const dynamic = 'force-dynamic';
 
 const TAB_COMPONENTS: Record<TabId, (d: DashboardData) => React.ReactNode> = {
   overview: OverviewTab,
+  chat: ChatTab,
   field: FieldTab,
   meals: MealsTab,
   people: PeopleTab,
@@ -79,9 +82,10 @@ export default async function HostDashboardPage({
     getGroupActivity(group),
     getGroupHosts(group.id),
   ]);
-  const [attendance, loop] = await Promise.all([
+  const [attendance, loop, chatUnread] = await Promise.all([
     getAttendanceForKits(kits.map((k) => k.id)),
     getHostLoopState(group, host.name.split(/\s+/)[0], members.accepted),
+    tab === 'chat' ? Promise.resolve(0) : getChatUnread(group.id, host.id),
   ]);
   const gatheredByKit = Object.fromEntries(Object.entries(attendance).map(([id, a]) => [id, a.count]));
 
@@ -150,7 +154,10 @@ export default async function HostDashboardPage({
           <ul className="flex gap-1.5 w-max min-w-full md:w-auto md:flex-wrap border-b-2 border-black">
             {TABS.map((t) => {
               const current = t.id === tab;
-              const badge = t.id === 'people' && members.pending.length > 0 ? members.pending.length : null;
+              const badge =
+                t.id === 'people' && members.pending.length > 0 ? String(members.pending.length)
+                : t.id === 'chat' && chatUnread > 0 ? (chatUnread > 9 ? '9+' : String(chatUnread))
+                : null;
               return (
                 <li key={t.id} className="-mb-[2px]">
                   <Link
@@ -164,7 +171,7 @@ export default async function HostDashboardPage({
                   >
                     {t.label}
                     {badge && (
-                      <span className="min-w-[22px] h-[22px] rounded-full bg-black text-cream text-xs font-bold inline-flex items-center justify-center px-1.5" aria-label={`${badge} waiting`}>
+                      <span className="min-w-[22px] h-[22px] rounded-full bg-black text-cream text-xs font-bold inline-flex items-center justify-center px-1.5" aria-label={t.id === 'chat' ? `${badge} new message${badge === '1' ? '' : 's'}` : `${badge} waiting`}>
                         {badge}
                       </span>
                     )}

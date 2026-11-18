@@ -11,10 +11,11 @@ import CompanySheet from './CompanySheet';
 import InvitePopup from './InvitePopup';
 import TableTab from './TableTab';
 import TogetherTab from './TogetherTab';
+import ChatPanel from '@/components/ChatPanel';
 import { setRsvp, markInvitesSeen } from './loopActions';
 import type { MemberLoopData } from './loopTypes';
 
-type Tab = 'month' | 'table' | 'field' | 'together' | 'members';
+type Tab = 'month' | 'chat' | 'table' | 'field' | 'together' | 'members';
 
 type Member = { id: string; name: string; city: string | null; state: string | null; church?: string | null };
 
@@ -30,12 +31,15 @@ type Props = {
   members: Member[];
   chatLink: string | null;
   loop: MemberLoopData;
+  /** Chat messages from others since this member last opened the chat. */
+  chatUnread: number;
   infoSlot?: React.ReactNode;
 };
 
-// Short labels keep all five tabs on one line on phones, with no sideways scrolling.
+// Short labels keep every tab on one line on phones, with no sideways scrolling.
 const TABS: { key: Tab; label: string; short: string }[] = [
   { key: 'month', label: 'This month', short: 'Month' },
+  { key: 'chat', label: 'Chat', short: 'Chat' },
   { key: 'table', label: 'Our table', short: 'Table' },
   { key: 'field', label: 'From the field', short: 'Field' },
   { key: 'together', label: 'Eat together', short: 'Together' },
@@ -63,6 +67,7 @@ export default function GroupTabs(props: Props) {
     loop.autoRsvp ? null : loop.received.find((i) => i.myStatus === 'invited' && !i.mySeen) ?? null,
   );
   const handledLink = useRef(false);
+  const [chatUnread, setChatUnread] = useState(() => (initialTab(loop.initialTab) === 'chat' ? 0 : props.chatUnread));
 
   const pendingInvites = loop.received.filter((i) => i.myStatus === 'invited').length;
 
@@ -112,8 +117,19 @@ export default function GroupTabs(props: Props) {
     return () => clearTimeout(t);
   }, [toast]);
 
+  function badgeFor(tab: Tab): number {
+    return tab === 'chat' ? chatUnread : tab === 'together' ? pendingInvites : 0;
+  }
+
+  function tabName(tab: (typeof TABS)[number]): string {
+    const n = badgeFor(tab.key);
+    if (!n) return tab.label;
+    return tab.key === 'chat' ? `${tab.label}, ${n} new message${n === 1 ? '' : 's'}` : `${tab.label}, ${n} invitation${n === 1 ? '' : 's'}`;
+  }
+
   function selectTab(tab: Tab) {
     setActive(tab);
+    if (tab === 'chat') setChatUnread(0);
     cleanUrl(tab);
   }
 
@@ -126,18 +142,22 @@ export default function GroupTabs(props: Props) {
             type="button"
             role="tab"
             aria-selected={active === tab.key}
-            aria-label={tab.label}
+            aria-label={tabName(tab)}
             onClick={() => selectTab(tab.key)}
-            className={`flex-none inline-flex items-center gap-1 font-inter font-semibold text-[11px] sm:text-xs tracking-[0.03em] sm:tracking-[0.05em] uppercase pt-3 pb-2.5 border-b-[3px] -mb-0.5 transition-colors whitespace-nowrap min-h-[44px] ${
+            className={`relative flex-none inline-flex items-center gap-1 font-inter font-semibold text-[11px] sm:text-xs tracking-[0.03em] sm:tracking-[0.05em] uppercase pt-3 pb-2.5 border-b-[3px] -mb-0.5 transition-colors whitespace-nowrap min-h-[44px] ${
               active === tab.key ? 'border-accent text-black' : 'border-transparent text-warm hover:text-black'
             }`}
           >
             <span className="sm:hidden" aria-hidden="true">{tab.short}</span>
             <span className="hidden sm:inline" aria-hidden="true">{tab.label}</span>
-            {tab.key === 'together' && pendingInvites > 0 && (
-              <span className="min-w-[18px] h-[18px] rounded-full bg-black text-cream text-[10px] font-bold inline-flex items-center justify-center px-1" aria-label={`${pendingInvites} invitation${pendingInvites === 1 ? '' : 's'}`}>
-                {pendingInvites}
-              </span>
+            {badgeFor(tab.key) > 0 && (
+              <>
+                {/* Phones: a dot that takes no width, so every tab still fits on a 320px screen. */}
+                <span aria-hidden="true" className={`sm:hidden absolute top-2 -right-2 w-2 h-2 rounded-full ${tab.key === 'chat' ? 'bg-accent' : 'bg-black'}`} />
+                <span aria-hidden="true" className={`hidden sm:inline-flex min-w-[18px] h-[18px] rounded-full text-cream text-[10px] font-bold items-center justify-center px-1 ${tab.key === 'chat' ? 'bg-accent' : 'bg-black'}`}>
+                  {badgeFor(tab.key) > 9 ? '9+' : badgeFor(tab.key)}
+                </span>
+              </>
             )}
           </button>
         ))}
@@ -168,6 +188,19 @@ export default function GroupTabs(props: Props) {
           />
           <InstallCard groupName={loop.groupName} />
         </>
+      )}
+      {active === 'chat' && (
+        <ChatPanel
+          groupId={loop.groupId}
+          token={token}
+          as="member"
+          outsideChatLink={props.chatLink}
+          prompts={[
+            'Hi everyone! Looking forward to gathering this month.',
+            `Praying for ${props.countryName} this week. Any requests?`,
+            'Who’s cooking what this month?',
+          ]}
+        />
       )}
       {active === 'table' && <TableTab token={token} loop={loop} />}
       {active === 'field' && (
