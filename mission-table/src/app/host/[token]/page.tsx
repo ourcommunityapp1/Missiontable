@@ -14,6 +14,7 @@ import {
 import { getHostLoopState } from '@/lib/gathering';
 import { TABS, type TabId, type DashboardData, formatDay } from './_tabs/shared';
 import OverviewTab from './_tabs/OverviewTab';
+import ScrollActiveTab from './_tabs/ScrollActiveTab';
 import FieldTab from './_tabs/FieldTab';
 import MealsTab from './_tabs/MealsTab';
 import PeopleTab from './_tabs/PeopleTab';
@@ -145,8 +146,8 @@ export default async function HostDashboardPage({
           )}
         </div>
 
-        <nav aria-label="Dashboard sections" className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0 border-b-2 border-black">
-          <ul className="flex gap-1.5 w-max md:w-auto md:flex-wrap">
+        <nav id="dashboard-tabs" aria-label="Dashboard sections" className="overflow-x-auto overflow-y-hidden no-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+          <ul className="flex gap-1.5 w-max min-w-full md:w-auto md:flex-wrap border-b-2 border-black">
             {TABS.map((t) => {
               const current = t.id === tab;
               const badge = t.id === 'people' && members.pending.length > 0 ? members.pending.length : null;
@@ -172,6 +173,7 @@ export default async function HostDashboardPage({
               );
             })}
           </ul>
+          <ScrollActiveTab navId="dashboard-tabs" />
         </nav>
       </div>
 

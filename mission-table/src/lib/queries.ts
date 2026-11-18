@@ -751,6 +751,7 @@ export async function authorizeHostForGroup(token: string, groupId: string): Pro
 
 /** Records a member opening their group page. Never throws: analytics must not break the page. */
 export async function recordGroupPageView(groupId: string, memberId: string): Promise<void> {
+  if (process.env.DISABLE_VIEW_TRACKING === '1') return; // local testing
   try {
     await supabase.from('group_page_views').insert({ group_id: groupId, member_id: memberId });
   } catch (err) {
