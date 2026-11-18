@@ -60,3 +60,14 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/*
+ * Pages never pan sideways on phones, even if an element overflows by a few
+ * pixels. `clip` (unlike `hidden`) doesn't create a scroll container, so the
+ * sticky header keeps working.
+ */
+html,
+body {
+  overflow-x: clip;
+  max-width: 100%;
+}
