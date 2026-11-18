@@ -1,0 +1,35 @@
+-- Rollback for 005_lock_down_rls.sql: restores the open policies exactly as
+-- they existed in production on 2026-11-17. Run only to recover from a
+-- missing SUPABASE_SERVICE_ROLE_KEY.
+create policy "Field post comments are publicly readable" on field_post_comments for select using (true);
+create policy "Anyone can comment on a field post" on field_post_comments for insert with check (true);
+create policy "Anyone can delete a field post comment" on field_post_comments for delete using (true);
+create policy "Field post reactions are publicly readable" on field_post_reactions for select using (true);
+create policy "Anyone can react to a field post" on field_post_reactions for insert with check (true);
+create policy "Anyone can remove their reaction" on field_post_reactions for delete using (true);
+create policy "Field posts are publicly readable" on field_posts for select using (true);
+create policy "Anyone can create a field post" on field_posts for insert with check (true);
+create policy "Group chat messages are publicly readable" on group_chat_messages for select using (true);
+create policy "Anyone can post a group chat message" on group_chat_messages for insert with check (true);
+create policy "Anyone can delete a group chat message" on group_chat_messages for delete using (true);
+create policy "Group cohosts are publicly readable" on group_cohosts for select using (true);
+create policy "Groups are publicly readable" on groups for select using (status <> 'inactive'::group_status);
+create policy "Anyone can create a group" on groups for insert with check (true);
+create policy "Service can update groups" on groups for update using (true) with check (true);
+create policy "Hosts are publicly readable" on hosts for select using (true);
+create policy "Anyone can create a host" on hosts for insert with check (true);
+create policy "Anyone can update a host" on hosts for update using (true) with check (true);
+create policy "Kit attendance is publicly readable" on kit_attendance for select using (true);
+create policy "Anyone can mark attendance" on kit_attendance for insert with check (true);
+create policy "Anyone can remove attendance" on kit_attendance for delete using (true);
+create policy "Kits are publicly readable" on kits for select using (true);
+create policy "Anyone can insert a kit" on kits for insert with check (true);
+create policy "Anyone can update a kit" on kits for update using (true) with check (true);
+create policy "Members are publicly readable" on members for select using (true);
+create policy "Anyone can create a member" on members for insert with check (true);
+create policy "Anyone can update a member" on members for update using (true) with check (true);
+create policy "Memberships are publicly readable" on memberships for select using (true);
+create policy "Anyone can create a membership" on memberships for insert with check (true);
+create policy "Anyone can update memberships" on memberships for update using (true) with check (true);
+create policy "Anyone can record a group page view" on group_page_views for insert with check (true);
+create policy "Group page views are readable" on group_page_views for select using (true);

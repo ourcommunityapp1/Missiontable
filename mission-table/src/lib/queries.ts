@@ -744,3 +744,187 @@ export async function authorizeHostForGroup(token: string, groupId: string): Pro
 
   return count ? host.id : null;
 }
+
+/** Records a member opening their group page. Never throws: analytics must not break the page. */
+export async function recordGroupPageView(groupId: string, memberId: string): Promise<void> {
+  try {
+    await supabase.from('group_page_views').insert({ group_id: groupId, member_id: memberId });
+  } catch (err) {
+    console.error('recordGroupPageView failed:', err);
+  }
+}
+
+// Member visits are recorded in group_page_views from this date on.
+export const MEMBER_VISIT_TRACKING_START = '2026-11-17';
+
+export type ActivityMonth = {
+  key: string; // YYYY-MM
+  label: string; // e.g. "Nov 2026"
+  newMembers: number;
+  meal: string | null; // recipe name (or "Meal sent") if a kit was scheduled that month
+  gathered: number; // "We gathered" marks on that month's meal
+  reactions: number;
+  comments: number;
+  memberVisitors: number | null; // distinct members who opened the group page; null = not tracked yet
+  visits: number | null;
+};
+
+export type GroupActivity = {
+  members: number;
+  memberStates: number; // distinct US states among accepted members who shared one
+  membersByMonth: { key: string; label: string; count: number }[]; // cumulative, oldest first
+  latestMeal: { label: string; recipe: string | null; recipients: number; opened: number } | null; // null until tracked
+  firstTrackedMonth: string; // YYYY-MM
+  pending: number;
+  mealsSent: number;
+  nextGathering: string | null; // YYYY-MM-DD
+  nextMealSent: boolean;
+  months: ActivityMonth[]; // newest first
+};
+
+function monthKey(iso: string): string {
+  return iso.slice(0, 7);
+}
+
+/** Month-by-month activity for the host dashboard (last 6 months, never before the group started). */
+export async function getGroupActivity(group: HostGroup): Promise<GroupActivity> {
+  const now = new Date();
+  const keys: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    const key = d.toISOString().slice(0, 7);
+    if (key < monthKey(group.start_date)) break;
+    keys.push(key);
+  }
+  if (keys.length === 0) keys.push(now.toISOString().slice(0, 7));
+  const since = `${keys[keys.length - 1]}-01`;
+
+  const [{ data: memberships }, { data: kits }, { data: posts }, { data: views }] = await Promise.all([
+    supabase.from('memberships').select('status, requested_at, members (state)').eq('group_id', group.id),
+    supabase.from('kits').select('id, meeting_date, recipe_name, created_at').eq('group_id', group.id),
+    supabase.from('field_posts').select('id').eq('group_id', group.id),
+    supabase.from('group_page_views').select('member_id, viewed_at').eq('group_id', group.id).gte('viewed_at', since),
+  ]) as unknown as [
+    { data: { status: string; requested_at: string; members: { state: string | null } | { state: string | null }[] | null }[] | null },
+    { data: { id: string; meeting_date: string; recipe_name: string | null; created_at: string }[] | null },
+    { data: { id: string }[] | null },
+    { data: { member_id: string; viewed_at: string }[] | null },
+  ];
+
+  const kitList = kits ?? [];
+  const postIds = (posts ?? []).map((p) => p.id);
+  const kitIds = kitList.map((k) => k.id);
+
+  const [{ data: attendance }, { data: reactions }, { data: comments }] = await Promise.all([
+    kitIds.length
+      ? supabase.from('kit_attendance').select('kit_id').in('kit_id', kitIds)
+      : Promise.resolve({ data: [] }),
+    postIds.length
+      ? supabase.from('field_post_reactions').select('created_at').in('post_id', postIds).gte('created_at', since)
+      : Promise.resolve({ data: [] }),
+    postIds.length
+      ? supabase.from('field_post_comments').select('created_at').in('post_id', postIds).gte('created_at', since)
+      : Promise.resolve({ data: [] }),
+  ]) as unknown as [
+    { data: { kit_id: string }[] | null },
+    { data: { created_at: string }[] | null },
+    { data: { created_at: string }[] | null },
+  ];
+
+  const gatheredByKit: Record<string, number> = {};
+  for (const a of attendance ?? []) gatheredByKit[a.kit_id] = (gatheredByKit[a.kit_id] ?? 0) + 1;
+
+  const trackingStartKey = monthKey(MEMBER_VISIT_TRACKING_START);
+  const months: ActivityMonth[] = keys.map((key) => {
+    const kit = kitList.find((k) => monthKey(k.meeting_date) === key);
+    const monthViews = (views ?? []).filter((v) => monthKey(v.viewed_at) === key);
+    const tracked = key >= trackingStartKey;
+    return {
+      key,
+      label: new Date(`${key}-01T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }),
+      newMembers: (memberships ?? []).filter((m) => m.status === 'accepted' && monthKey(m.requested_at) === key).length,
+      meal: kit ? (kit.recipe_name ?? 'Meal sent') : null,
+      gathered: kit ? (gatheredByKit[kit.id] ?? 0) : 0,
+      reactions: (reactions ?? []).filter((r) => monthKey(r.created_at) === key).length,
+      comments: (comments ?? []).filter((c) => monthKey(c.created_at) === key).length,
+      memberVisitors: tracked ? new Set(monthViews.map((v) => v.member_id)).size : null,
+      visits: tracked ? monthViews.length : null,
+    };
+  });
+
+  const nextGathering = getNextExpectedMeetingDate({
+    rhythmType: group.rhythm_type,
+    dayOfMonth: group.day_of_month,
+    weekOfMonth: group.week_of_month,
+    dayOfWeek: group.day_of_week,
+  });
+
+  const accepted = (memberships ?? []).filter((m) => m.status === 'accepted');
+  const states = new Set(
+    accepted
+      .map((m) => (Array.isArray(m.members) ? m.members[0] : m.members)?.state)
+      .map((st) => normalizeUsState(st))
+      .filter((st): st is string => !!st),
+  );
+  const membersByMonth = [...keys].reverse().map((key) => ({
+    key,
+    label: new Date(`${key}-01T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }),
+    count: accepted.filter((m) => monthKey(m.requested_at) <= key).length,
+  }));
+
+  // Opens of the most recent meal: distinct members who opened the group page after it was created.
+  const latestKit = [...kitList].sort((x, y) => y.created_at.localeCompare(x.created_at))[0];
+  let latestMeal: GroupActivity['latestMeal'] = null;
+  if (latestKit && latestKit.created_at >= MEMBER_VISIT_TRACKING_START) {
+    const { data: openViews } = await supabase
+      .from('group_page_views')
+      .select('member_id')
+      .eq('group_id', group.id)
+      .gte('viewed_at', latestKit.created_at) as unknown as { data: { member_id: string }[] | null };
+    latestMeal = {
+      label: new Date(`${latestKit.meeting_date}T00:00:00`).toLocaleDateString('en-US', { month: 'long' }),
+      recipe: latestKit.recipe_name,
+      recipients: accepted.length,
+      opened: new Set((openViews ?? []).map((v) => v.member_id)).size,
+    };
+  }
+
+  return {
+    members: accepted.length,
+    memberStates: states.size,
+    membersByMonth,
+    latestMeal,
+    firstTrackedMonth: monthKey(MEMBER_VISIT_TRACKING_START),
+    pending: (memberships ?? []).filter((m) => m.status === 'pending').length,
+    mealsSent: kitList.length, // a kit is emailed to members when it's created
+    nextGathering,
+    nextMealSent: nextGathering ? kitList.some((k) => k.meeting_date === nextGathering) : false,
+    months,
+  };
+}
+
+const US_STATES: Record<string, string> = {
+  ALABAMA: 'AL', ALASKA: 'AK', ARIZONA: 'AZ', ARKANSAS: 'AR', CALIFORNIA: 'CA', COLORADO: 'CO', CONNECTICUT: 'CT',
+  DELAWARE: 'DE', FLORIDA: 'FL', GEORGIA: 'GA', HAWAII: 'HI', IDAHO: 'ID', ILLINOIS: 'IL', INDIANA: 'IN', IOWA: 'IA',
+  KANSAS: 'KS', KENTUCKY: 'KY', LOUISIANA: 'LA', MAINE: 'ME', MARYLAND: 'MD', MASSACHUSETTS: 'MA', MICHIGAN: 'MI',
+  MINNESOTA: 'MN', MISSISSIPPI: 'MS', MISSOURI: 'MO', MONTANA: 'MT', NEBRASKA: 'NE', NEVADA: 'NV', 'NEW HAMPSHIRE': 'NH',
+  'NEW JERSEY': 'NJ', 'NEW MEXICO': 'NM', 'NEW YORK': 'NY', 'NORTH CAROLINA': 'NC', 'NORTH DAKOTA': 'ND', OHIO: 'OH',
+  OKLAHOMA: 'OK', OREGON: 'OR', PENNSYLVANIA: 'PA', 'RHODE ISLAND': 'RI', 'SOUTH CAROLINA': 'SC', 'SOUTH DAKOTA': 'SD',
+  TENNESSEE: 'TN', TEXAS: 'TX', UTAH: 'UT', VERMONT: 'VT', VIRGINIA: 'VA', WASHINGTON: 'WA', 'WEST VIRGINIA': 'WV',
+  WISCONSIN: 'WI', WYOMING: 'WY', 'DISTRICT OF COLUMBIA': 'DC',
+};
+const US_STATE_NAMES: Record<string, string> = Object.fromEntries(
+  Object.entries(US_STATES).map(([name, code]) => [code, name.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())]),
+);
+
+/** "Oklahoma", "ok", " OK " -> "OK". Unknown values are returned trimmed and upper-cased. */
+export function normalizeUsState(value: string | null | undefined): string | null {
+  const v = value?.trim().toUpperCase();
+  if (!v) return null;
+  return US_STATES[v] ?? v;
+}
+
+/** "OK" -> "Oklahoma"; unknown codes are returned as-is. */
+export function usStateName(code: string): string {
+  return US_STATE_NAMES[code] ?? code;
+}

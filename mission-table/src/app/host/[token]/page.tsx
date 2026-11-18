@@ -1,315 +1,178 @@
 import { notFound } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
 import Link from 'next/link';
 import TopNavBar from '@/components/TopNavBar';
 import Footer from '@/components/Footer';
-import { getHostByToken, getMembersForGroup, getKitsForGroup, getFieldPostsForGroup, type HostGroup } from '@/lib/queries';
-import { approveMember, updateChatLink } from './actions';
-import ResendKitButton from './ResendKitButton';
+import {
+  getHostByToken,
+  getMembersForGroup,
+  getKitsForGroup,
+  getFieldPostsForGroup,
+  getGroupActivity,
+  getGroupHosts,
+  getAttendanceForKits,
+} from '@/lib/queries';
+import { TABS, type TabId, type DashboardData, formatDay } from './_tabs/shared';
+import OverviewTab from './_tabs/OverviewTab';
+import FieldTab from './_tabs/FieldTab';
+import MealsTab from './_tabs/MealsTab';
+import PeopleTab from './_tabs/PeopleTab';
+import InsightsTab from './_tabs/InsightsTab';
+import SettingsTab from './_tabs/SettingsTab';
 
 export const dynamic = 'force-dynamic';
 
-async function GroupSection({ group, token, hostName }: { group: HostGroup; token: string; hostName: string }) {
-  const [members, kits, fieldPosts] = await Promise.all([
-    getMembersForGroup(group.id),
-    getKitsForGroup(group.id),
-    getFieldPostsForGroup(group.id),
-  ]);
-  const groupDisplayName = group.name ?? hostName;
-
-  return (
-    <div className="flex flex-col gap-12">
-
-      {/* ── Your Group ────────────────────────────────── */}
-      <section>
-        <div className="flex items-center justify-between border-t-2 border-black pt-4 mb-6">
-          <h2 className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-black">
-            Group Details
-          </h2>
-          <Link
-            href={`/host/${token}/group/${group.id}/edit`}
-            className="font-inter font-semibold text-xs tracking-[0.05em] uppercase border-b-2 border-black pb-0.5 hover:text-warm transition-colors"
-          >
-            Edit Details →
-          </Link>
-        </div>
-
-        <div className="border-2 border-black p-5">
-          <div className="grid grid-cols-2 gap-6 mb-6">
-            <div>
-              <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-black mb-1">Country</p>
-              <p className="font-inter text-sm text-warm">{group.countryName}</p>
-            </div>
-            <div>
-              <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-black mb-1">Status</p>
-              <p className={`font-inter text-sm font-semibold ${group.status === 'active' ? 'text-accent' : 'text-warm'}`}>
-                {group.status.charAt(0).toUpperCase() + group.status.slice(1)}
-              </p>
-            </div>
-            <div>
-              <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-black mb-1">Rhythm</p>
-              <p className="font-inter text-sm text-warm">{group.rhythm}</p>
-            </div>
-            <div>
-              <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-black mb-1">Time</p>
-              <p className="font-inter text-sm text-warm">{group.time}</p>
-            </div>
-            <div className="col-span-2">
-              <p className="font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-black mb-1">Group Chat Link</p>
-              {group.chat_link ? (
-                <p className="font-inter text-sm text-warm break-all">{group.chat_link}</p>
-              ) : (
-                <p className="font-inter text-sm text-warm italic">None set</p>
-              )}
-            </div>
-          </div>
-
-          {/* Edit chat link */}
-          <form
-            action={async (formData: FormData) => {
-              'use server';
-              const link = (formData.get('chat_link') as string)?.trim() || null;
-              await updateChatLink(token, group.id, link);
-              revalidatePath(`/host/${token}`);
-            }}
-            className="flex gap-3 items-end border-t-2 border-black pt-4"
-          >
-            <div className="flex-1">
-              <label className="block font-inter text-[10px] font-semibold tracking-[0.1em] uppercase text-black mb-1">
-                Update Chat Link
-              </label>
-              <input
-                name="chat_link"
-                type="url"
-                defaultValue={group.chat_link ?? ''}
-                placeholder="https://chat.whatsapp.com/..."
-                className="w-full border-2 border-black bg-cream font-inter text-sm px-3 py-2 outline-none focus:border-black"
-              />
-            </div>
-            <button
-              type="submit"
-              className="font-inter font-semibold text-sm tracking-[0.05em] uppercase border-2 border-black px-4 py-2 hover:bg-black hover:text-white transition-colors"
-            >
-              Save
-            </button>
-          </form>
-        </div>
-      </section>
-
-      {/* ── Members ───────────────────────────────────── */}
-      <section>
-        <h2 className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-black border-t-2 border-black pt-4 mb-6">
-          Members
-        </h2>
-
-        {members.pending.length > 0 && (
-          <div className="mb-8">
-            <p className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-warm mb-3">
-              Pending ({members.pending.length})
-            </p>
-            <div className="flex flex-col">
-              {members.pending.map((m) => (
-                <div key={m.membershipId} className="flex items-start justify-between gap-4 border-t-2 border-black py-4 last:border-b-2">
-                  <div>
-                    <p className="font-inter font-semibold text-sm text-black">{m.name}</p>
-                    <p className="font-inter text-sm text-warm">{m.email}</p>
-                    {m.phone && <p className="font-inter text-xs text-warm">{m.phone}</p>}
-                    {m.church && <p className="font-inter text-xs text-warm">{m.church}</p>}
-                    {(m.city || m.state) && (
-                      <p className="font-inter text-xs text-warm">
-                        {[m.city, m.state].filter(Boolean).join(', ')}
-                      </p>
-                    )}
-                  </div>
-                  <form
-                    action={async () => {
-                      'use server';
-                      await approveMember(token, m.membershipId, group.id);
-                      revalidatePath(`/host/${token}`);
-                    }}
-                  >
-                    <button
-                      type="submit"
-                      className="font-inter font-semibold text-xs tracking-[0.05em] uppercase border-2 border-black px-3 py-2 hover:bg-black hover:text-white transition-colors whitespace-nowrap"
-                    >
-                      Approve →
-                    </button>
-                  </form>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {members.accepted.length > 0 ? (
-          <div>
-            <p className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-warm mb-3">
-              Accepted ({members.accepted.length})
-            </p>
-            <div className="flex flex-col">
-              {members.accepted.map((m) => (
-                <div key={m.id} className="flex items-center justify-between gap-4 border-t-2 border-black py-3 last:border-b-2">
-                  <p className="font-inter font-semibold text-sm text-black">{m.name}</p>
-                  <p className="font-inter text-sm text-warm">
-                    {[m.city, m.state].filter(Boolean).join(', ')}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : members.pending.length === 0 ? (
-          <p className="font-inter text-base text-warm">No members yet. Share your group link to get started.</p>
-        ) : null}
-      </section>
-
-      {/* ── Meals ─────────────────────────────────────── */}
-      <section>
-        <div className="flex items-center justify-between border-t-2 border-black pt-4 mb-6">
-          <h2 className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-black">
-            Meals
-          </h2>
-          <Link
-            href={`/host/${token}/kit/new?groupId=${group.id}`}
-            className="font-inter font-semibold text-xs tracking-[0.05em] uppercase border-b-2 border-black pb-0.5 hover:text-warm transition-colors"
-          >
-            Create This Month's Meal →
-          </Link>
-        </div>
-
-        {kits.length === 0 ? (
-          <p className="font-inter text-base text-warm">
-            No meals yet. Create your first meal to send your group a recipe, scripture, and prayer requests.
-          </p>
-        ) : (
-          <div className="flex flex-col">
-            {kits.map((kit) => (
-              <div key={kit.id} className="flex items-start justify-between gap-4 border-t-2 border-black py-4 last:border-b-2">
-                <div>
-                  <p className="font-inter font-semibold text-sm text-black">
-                    {new Date(kit.meeting_date + 'T00:00:00').toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </p>
-                  {kit.recipe_name && (
-                    <p className="font-inter text-sm text-warm">{kit.recipe_name}</p>
-                  )}
-                  {kit.scripture_reference && (
-                    <p className="font-inter text-xs text-warm">{kit.scripture_reference}</p>
-                  )}
-                </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  <Link
-                    href={`/host/${token}/kit/${kit.id}/edit`}
-                    className="font-inter font-semibold text-xs tracking-[0.05em] uppercase border-2 border-black px-3 py-2 hover:bg-black hover:text-white transition-colors whitespace-nowrap"
-                  >
-                    Edit →
-                  </Link>
-                  <ResendKitButton
-                    token={token}
-                    kitId={kit.id}
-                    groupId={group.id}
-                    groupDisplayName={groupDisplayName}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ── From the Field ────────────────────────────── */}
-      <section>
-        <div className="flex items-center justify-between border-t-2 border-black pt-4 mb-6">
-          <h2 className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-black">
-            From the Field
-          </h2>
-          <Link
-            href={`/host/${token}/field-post/new?groupId=${group.id}`}
-            className="font-inter font-semibold text-xs tracking-[0.05em] uppercase border-b-2 border-black pb-0.5 hover:text-warm transition-colors"
-          >
-            New Post →
-          </Link>
-        </div>
-
-        {fieldPosts.length === 0 ? (
-          <p className="font-inter text-base text-warm">
-            No updates yet. Share a note from your mission partner in the field.
-          </p>
-        ) : (
-          <div className="flex flex-col">
-            {fieldPosts.map((post) => (
-              <div key={post.id} className="border-t-2 border-black py-4 last:border-b-2">
-                <p className="font-inter font-semibold text-sm text-black">{post.author_label}</p>
-                <p className="font-inter text-sm text-warm mt-1 line-clamp-2">{post.body}</p>
-                <p className="font-inter text-xs text-warm mt-1">
-                  {new Date(post.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                  {' · '}{post.reactionCount} praying · {post.comments.length} comments
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-    </div>
-  );
-}
+const TAB_COMPONENTS: Record<TabId, (d: DashboardData) => React.ReactNode> = {
+  overview: OverviewTab,
+  field: FieldTab,
+  meals: MealsTab,
+  people: PeopleTab,
+  insights: InsightsTab,
+  settings: SettingsTab,
+};
 
 export default async function HostDashboardPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ group?: string; tab?: string }>;
 }) {
   const { token } = await params;
+  const sp = await searchParams;
   const data = await getHostByToken(token);
   if (!data) notFound();
 
   const { host, groups } = data;
 
+  if (groups.length === 0) {
+    return (
+      <main className="min-h-screen flex flex-col bg-cream">
+        <TopNavBar />
+        <div className="max-w-[1120px] mx-auto w-full px-6 md:px-8 py-12 pb-24 flex-1">
+          <p className="font-inter font-semibold text-xs tracking-[0.12em] uppercase text-warm mb-2">Host dashboard</p>
+          <h1 className="font-fraunces font-bold text-[40px] md:text-[48px] leading-none tracking-[-0.035em] text-black mb-4">Welcome, {host.name.split(/\s+/)[0]}.</h1>
+          <p className="font-inter text-base text-warm max-w-[600px]">Your group is pending review. You&apos;ll receive an email once it&apos;s approved.</p>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
+
+  const group = groups.find((g) => g.id === sp.group) ?? groups[0];
+  const tab: TabId = TABS.some((t) => t.id === sp.tab) ? (sp.tab as TabId) : 'overview';
+  const multiGroup = groups.length > 1;
+
+  const hrefFor = (groupId: string, t: TabId) => {
+    const q = new URLSearchParams();
+    if (multiGroup) q.set('group', groupId);
+    if (t !== 'overview') q.set('tab', t);
+    const qs = q.toString();
+    return `/host/${token}${qs ? `?${qs}` : ''}`;
+  };
+
+  const [members, kits, fieldPosts, activity, cohosts] = await Promise.all([
+    getMembersForGroup(group.id),
+    getKitsForGroup(group.id),
+    getFieldPostsForGroup(group.id),
+    getGroupActivity(group),
+    getGroupHosts(group.id),
+  ]);
+  const attendance = await getAttendanceForKits(kits.map((k) => k.id));
+  const gatheredByKit = Object.fromEntries(Object.entries(attendance).map(([id, a]) => [id, a.count]));
+
+  const dashboard: DashboardData = {
+    token,
+    group,
+    hostName: host.name,
+    members,
+    kits,
+    fieldPosts,
+    activity,
+    cohosts,
+    gatheredByKit,
+    tabHref: (t) => hrefFor(group.id, t),
+  };
+  const Panel = TAB_COMPONENTS[tab];
+  const next = activity.nextGathering;
+
   return (
     <main className="min-h-screen flex flex-col bg-cream">
       <TopNavBar />
 
-      <div className="max-w-[1280px] mx-auto w-full px-6 md:px-16 py-8 pb-24">
-
-        {/* Header */}
-        <div className="border-t-2 border-black pt-4 mb-12">
-          <p className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-warm mb-2">
-            Host Dashboard
-          </p>
-          <h1 className="font-fraunces font-bold text-[48px] md:text-[64px] uppercase leading-none tracking-[-0.04em] fraunces-64 text-black mb-2">
-            {host.name}
-          </h1>
-          <p className="font-inter text-base text-warm">Welcome back, {host.name}.</p>
-        </div>
-
-        {groups.length === 0 ? (
-          <p className="font-inter text-base text-warm max-w-[600px]">
-            Your group is pending review. You'll receive an email once it's approved.
-          </p>
-        ) : groups.length === 1 ? (
-          <div className="max-w-[800px]">
-            <GroupSection group={groups[0]} token={token} hostName={host.name} />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-24">
-            {groups.map((group) => (
-              <div key={group.id} className="max-w-[800px]">
-                <div className="mb-8">
-                  <h2 className="font-fraunces font-bold text-[32px] uppercase leading-none tracking-[-0.03em] fraunces-32 text-black">
-                    {group.name ?? group.countryName}
-                  </h2>
-                  <p className="font-inter text-sm text-warm mt-1">{group.countryName}</p>
-                </div>
-                <GroupSection group={group} token={token} hostName={host.name} />
-              </div>
-            ))}
-          </div>
+      <div className="max-w-[1120px] mx-auto w-full px-6 md:px-8 pt-8 md:pt-10">
+        {multiGroup && (
+          <nav aria-label="Your groups" className="flex flex-wrap items-center gap-2 mb-6">
+            <span className="font-inter font-semibold text-[11px] tracking-[0.12em] uppercase text-warm mr-1">Your groups</span>
+            {groups.map((g) => {
+              const current = g.id === group.id;
+              return (
+                <Link
+                  key={g.id}
+                  href={hrefFor(g.id, tab)}
+                  aria-current={current ? 'page' : undefined}
+                  className={`inline-flex items-center min-h-[36px] px-3 border-2 font-inter text-[13px] ${current ? 'border-black bg-black text-cream font-semibold' : 'border-black text-black hover:bg-cream-dark'}`}
+                >
+                  {g.name ?? g.countryName}
+                </Link>
+              );
+            })}
+          </nav>
         )}
 
+        <div className="flex flex-wrap items-end justify-between gap-5 mb-7">
+          <div className="flex flex-col gap-2 min-w-0">
+            <p className="font-inter font-semibold text-xs tracking-[0.12em] uppercase text-warm">
+              {group.group_type === 'virtual' ? 'Virtual group' : 'In-person group'} · {group.countryName}
+              {group.status !== 'active' && ` · ${group.status}`}
+            </p>
+            <h1 className="font-fraunces font-bold text-[34px] md:text-[48px] leading-none tracking-[-0.035em] text-black">
+              {group.name ?? group.countryName}
+            </h1>
+          </div>
+          {next && (
+            <p className="inline-flex flex-wrap items-center gap-2.5 border-2 border-black px-3.5 py-2.5 font-inter text-sm text-black">
+              <span className="font-bold">Next: {formatDay(next)}</span>
+              <span aria-hidden="true" className="w-px h-4 bg-black inline-block" />
+              <span className={activity.nextMealSent ? 'font-semibold' : 'font-semibold text-[#8A3A12]'}>
+                {activity.nextMealSent ? 'Meal sent' : 'Meal not sent'}
+              </span>
+            </p>
+          )}
+        </div>
+
+        <nav aria-label="Dashboard sections" className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0 border-b-2 border-black">
+          <ul className="flex gap-1.5 w-max md:w-auto md:flex-wrap">
+            {TABS.map((t) => {
+              const current = t.id === tab;
+              const badge = t.id === 'people' && members.pending.length > 0 ? members.pending.length : null;
+              return (
+                <li key={t.id} className="-mb-[2px]">
+                  <Link
+                    href={hrefFor(group.id, t.id)}
+                    aria-current={current ? 'page' : undefined}
+                    className={`inline-flex items-center gap-2 min-h-[48px] px-4 md:px-[22px] border-2 font-inter text-sm whitespace-nowrap transition-colors ${
+                      current
+                        ? 'bg-cream text-black font-bold border-black border-b-cream'
+                        : 'bg-[#EFECE5] text-warm font-medium border-[#EFECE5] border-b-black hover:text-black'
+                    }`}
+                  >
+                    {t.label}
+                    {badge && (
+                      <span className="min-w-[22px] h-[22px] rounded-full bg-black text-cream text-xs font-bold inline-flex items-center justify-center px-1.5" aria-label={`${badge} waiting`}>
+                        {badge}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
       </div>
+
+      <section aria-label={TABS.find((t) => t.id === tab)!.label} className="max-w-[1120px] mx-auto w-full px-6 md:px-8 pt-8 md:pt-10 pb-24 flex-1">
+        <Panel {...dashboard} />
+      </section>
 
       <Footer />
     </main>
