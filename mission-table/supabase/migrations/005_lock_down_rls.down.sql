@@ -33,3 +33,11 @@ create policy "Anyone can create a membership" on memberships for insert with ch
 create policy "Anyone can update memberships" on memberships for update using (true) with check (true);
 create policy "Anyone can record a group page view" on group_page_views for insert with check (true);
 create policy "Group page views are readable" on group_page_views for select using (true);
+create policy "server access" on gathering_rsvps for all using (true) with check (true);
+create policy "server access" on host_notes for all using (true) with check (true);
+create policy "server access" on gathering_sends for all using (true) with check (true);
+create policy "server access" on table_posts for all using (true) with check (true);
+create policy "server access" on meal_invites for all using (true) with check (true);
+create policy "server access" on meal_invite_guests for all using (true) with check (true);
+create policy "server uploads table photos" on storage.objects for insert with check (bucket_id = 'table-photos');
+create policy "server deletes table photos" on storage.objects for delete using (bucket_id = 'table-photos');

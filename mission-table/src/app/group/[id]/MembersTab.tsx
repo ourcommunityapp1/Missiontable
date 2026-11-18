@@ -1,6 +1,6 @@
 'use client';
 
-type Member = { id: string; name: string; city: string | null; state: string | null };
+type Member = { id: string; name: string; city: string | null; state: string | null; church?: string | null };
 
 type Props = {
   members: Member[];
@@ -41,6 +41,7 @@ export default function MembersTab({ members, chatLink }: Props) {
               {(m.city || m.state) && (
                 <p className="font-inter text-xs text-warm truncate">{[m.city, m.state].filter(Boolean).join(', ')}</p>
               )}
+              {m.church && <p className="font-inter text-xs text-warm truncate">{m.church}</p>}
             </div>
           </div>
         ))}

@@ -1,5 +1,6 @@
 import type { HostGroup, GroupMembers, FieldPostWithEngagement, GroupActivity, GroupHost } from '@/lib/queries';
 import type { KitRow } from '@/lib/database.types';
+import type { HostLoopState } from '@/lib/gathering';
 
 export type TabId = 'overview' | 'field' | 'meals' | 'people' | 'insights' | 'settings';
 
@@ -21,6 +22,8 @@ export type DashboardData = {
   fieldPosts: FieldPostWithEngagement[];
   activity: GroupActivity;
   cohosts: GroupHost[];
+  /** RSVPs and host notes for the next / last gathering. */
+  loop: HostLoopState;
   /** "We gathered" marks per kit id. */
   gatheredByKit: Record<string, number>;
   /** Builds a link to another tab of the same group. */
