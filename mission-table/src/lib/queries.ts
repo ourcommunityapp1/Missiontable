@@ -771,6 +771,10 @@ export type ActivityMonth = {
 
 export type GroupActivity = {
   members: number;
+  memberStates: number; // distinct US states among accepted members who shared one
+  membersByMonth: { key: string; label: string; count: number }[]; // cumulative, oldest first
+  latestMeal: { label: string; recipe: string | null; recipients: number; opened: number } | null; // null until tracked
+  firstTrackedMonth: string; // YYYY-MM
   pending: number;
   mealsSent: number;
   nextGathering: string | null; // YYYY-MM-DD
@@ -796,13 +800,13 @@ export async function getGroupActivity(group: HostGroup): Promise<GroupActivity>
   const since = `${keys[keys.length - 1]}-01`;
 
   const [{ data: memberships }, { data: kits }, { data: posts }, { data: views }] = await Promise.all([
-    supabase.from('memberships').select('status, requested_at').eq('group_id', group.id),
-    supabase.from('kits').select('id, meeting_date, recipe_name').eq('group_id', group.id),
+    supabase.from('memberships').select('status, requested_at, members (state)').eq('group_id', group.id),
+    supabase.from('kits').select('id, meeting_date, recipe_name, created_at').eq('group_id', group.id),
     supabase.from('field_posts').select('id').eq('group_id', group.id),
     supabase.from('group_page_views').select('member_id, viewed_at').eq('group_id', group.id).gte('viewed_at', since),
   ]) as unknown as [
-    { data: { status: string; requested_at: string }[] | null },
-    { data: { id: string; meeting_date: string; recipe_name: string | null }[] | null },
+    { data: { status: string; requested_at: string; members: { state: string | null } | { state: string | null }[] | null }[] | null },
+    { data: { id: string; meeting_date: string; recipe_name: string | null; created_at: string }[] | null },
     { data: { id: string }[] | null },
     { data: { member_id: string; viewed_at: string }[] | null },
   ];
@@ -855,12 +859,72 @@ export async function getGroupActivity(group: HostGroup): Promise<GroupActivity>
     dayOfWeek: group.day_of_week,
   });
 
+  const accepted = (memberships ?? []).filter((m) => m.status === 'accepted');
+  const states = new Set(
+    accepted
+      .map((m) => (Array.isArray(m.members) ? m.members[0] : m.members)?.state)
+      .map((st) => normalizeUsState(st))
+      .filter((st): st is string => !!st),
+  );
+  const membersByMonth = [...keys].reverse().map((key) => ({
+    key,
+    label: new Date(`${key}-01T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }),
+    count: accepted.filter((m) => monthKey(m.requested_at) <= key).length,
+  }));
+
+  // Opens of the most recent meal: distinct members who opened the group page after it was created.
+  const latestKit = [...kitList].sort((x, y) => y.created_at.localeCompare(x.created_at))[0];
+  let latestMeal: GroupActivity['latestMeal'] = null;
+  if (latestKit && latestKit.created_at >= MEMBER_VISIT_TRACKING_START) {
+    const { data: openViews } = await supabase
+      .from('group_page_views')
+      .select('member_id')
+      .eq('group_id', group.id)
+      .gte('viewed_at', latestKit.created_at) as unknown as { data: { member_id: string }[] | null };
+    latestMeal = {
+      label: new Date(`${latestKit.meeting_date}T00:00:00`).toLocaleDateString('en-US', { month: 'long' }),
+      recipe: latestKit.recipe_name,
+      recipients: accepted.length,
+      opened: new Set((openViews ?? []).map((v) => v.member_id)).size,
+    };
+  }
+
   return {
-    members: (memberships ?? []).filter((m) => m.status === 'accepted').length,
+    members: accepted.length,
+    memberStates: states.size,
+    membersByMonth,
+    latestMeal,
+    firstTrackedMonth: monthKey(MEMBER_VISIT_TRACKING_START),
     pending: (memberships ?? []).filter((m) => m.status === 'pending').length,
     mealsSent: kitList.length, // a kit is emailed to members when it's created
     nextGathering,
     nextMealSent: nextGathering ? kitList.some((k) => k.meeting_date === nextGathering) : false,
     months,
   };
+}
+
+const US_STATES: Record<string, string> = {
+  ALABAMA: 'AL', ALASKA: 'AK', ARIZONA: 'AZ', ARKANSAS: 'AR', CALIFORNIA: 'CA', COLORADO: 'CO', CONNECTICUT: 'CT',
+  DELAWARE: 'DE', FLORIDA: 'FL', GEORGIA: 'GA', HAWAII: 'HI', IDAHO: 'ID', ILLINOIS: 'IL', INDIANA: 'IN', IOWA: 'IA',
+  KANSAS: 'KS', KENTUCKY: 'KY', LOUISIANA: 'LA', MAINE: 'ME', MARYLAND: 'MD', MASSACHUSETTS: 'MA', MICHIGAN: 'MI',
+  MINNESOTA: 'MN', MISSISSIPPI: 'MS', MISSOURI: 'MO', MONTANA: 'MT', NEBRASKA: 'NE', NEVADA: 'NV', 'NEW HAMPSHIRE': 'NH',
+  'NEW JERSEY': 'NJ', 'NEW MEXICO': 'NM', 'NEW YORK': 'NY', 'NORTH CAROLINA': 'NC', 'NORTH DAKOTA': 'ND', OHIO: 'OH',
+  OKLAHOMA: 'OK', OREGON: 'OR', PENNSYLVANIA: 'PA', 'RHODE ISLAND': 'RI', 'SOUTH CAROLINA': 'SC', 'SOUTH DAKOTA': 'SD',
+  TENNESSEE: 'TN', TEXAS: 'TX', UTAH: 'UT', VERMONT: 'VT', VIRGINIA: 'VA', WASHINGTON: 'WA', 'WEST VIRGINIA': 'WV',
+  WISCONSIN: 'WI', WYOMING: 'WY', 'DISTRICT OF COLUMBIA': 'DC',
+};
+const US_STATE_NAMES: Record<string, string> = Object.fromEntries(
+  Object.entries(US_STATES).map(([name, code]) => [code, name.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())]),
+);
+
+/** "Oklahoma", "ok", " OK " -> "OK". Unknown values are returned trimmed and upper-cased. */
+export function normalizeUsState(value: string | null | undefined): string | null {
+  const v = value?.trim().toUpperCase();
+  if (!v) return null;
+  return US_STATES[v] ?? v;
+}
+
+/** "OK" -> "Oklahoma"; unknown codes are returned as-is. */
+export function usStateName(code: string): string {
+  return US_STATE_NAMES[code] ?? code;
 }

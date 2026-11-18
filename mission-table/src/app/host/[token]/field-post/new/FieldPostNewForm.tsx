@@ -8,9 +8,11 @@ import { createFieldPost } from './actions';
 type Props = {
   token: string;
   groupId: string;
+  /** Where to go after posting. Defaults to the host dashboard. */
+  redirectTo?: string;
 };
 
-export default function FieldPostNewForm({ token, groupId }: Props) {
+export default function FieldPostNewForm({ token, groupId, redirectTo }: Props) {
   const router = useRouter();
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -23,7 +25,8 @@ export default function FieldPostNewForm({ token, groupId }: Props) {
     const result = await createFieldPost(token, groupId, formData);
     setSubmitting(false);
     if (result.success) {
-      router.push(`/host/${token}`);
+      router.push(redirectTo ?? `/host/${token}`);
+      router.refresh();
     } else {
       setError(result.error);
     }
