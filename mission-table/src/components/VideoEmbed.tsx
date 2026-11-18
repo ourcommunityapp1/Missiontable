@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { preconnect } from 'react-dom';
 import Image from 'next/image';
-import { toEmbeddable, siteName } from '@/lib/video';
+import { toEmbeddable, siteName, type VideoProvider } from '@/lib/video';
 
 type Props = {
   url: string;
@@ -10,6 +11,16 @@ type Props = {
   posterUrl?: string | null;
   /** Who/what the video is from, for screen readers. */
   title: string;
+};
+
+const PROVIDER_NAME: Record<VideoProvider, string> = { youtube: 'YouTube', vimeo: 'Vimeo', facebook: 'Facebook' };
+
+// Hosts each player needs first. Connecting while the video scrolls into view
+// (no request is made, just DNS + TLS) lets it start sooner when tapped.
+const WARM: Record<VideoProvider, string[]> = {
+  youtube: ['https://www.youtube-nocookie.com', 'https://www.google.com', 'https://i.ytimg.com'],
+  vimeo: ['https://player.vimeo.com', 'https://i.vimeocdn.com', 'https://f.vimeocdn.com'],
+  facebook: ['https://www.facebook.com', 'https://static.xx.fbcdn.net'],
 };
 
 function PlayBadge() {
@@ -21,16 +32,30 @@ function PlayBadge() {
 }
 
 /**
- * Plays YouTube, Vimeo and Facebook videos inside the app. Nothing loads from the
- * video site until the member taps play. Other links open the site in a new tab.
+ * Plays YouTube, Vimeo and Facebook videos inside the app. The player loads
+ * when the member taps play. Other links open the site in a new tab.
  */
 export default function VideoEmbed({ url, posterUrl, title }: Props) {
   const video = toEmbeddable(url);
   const [playing, setPlaying] = useState(false);
   const [lastUrl, setLastUrl] = useState(url);
-  const [posterFailed, setPosterFailed] = useState(false);
+  const [posterIndex, setPosterIndex] = useState(0);
   // A different link (the host editing the preview) starts from the poster again.
-  if (url !== lastUrl) { setLastUrl(url); setPlaying(false); setPosterFailed(false); }
+  if (url !== lastUrl) { setLastUrl(url); setPlaying(false); setPosterIndex(0); }
+
+  const box = useRef<HTMLDivElement>(null);
+  const provider = video?.provider ?? null;
+  useEffect(() => {
+    const el = box.current;
+    if (!provider || !el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver((entries) => {
+      if (!entries.some((e) => e.isIntersecting)) return;
+      for (const origin of WARM[provider]) preconnect(origin);
+      io.disconnect();
+    }, { rootMargin: '300px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [provider]);
 
   if (!video) {
     if (!/^https?:\/\//i.test(url.trim())) return null;
@@ -50,14 +75,16 @@ export default function VideoEmbed({ url, posterUrl, title }: Props) {
     );
   }
 
-  const poster = posterUrl ?? video.thumbnailUrl;
-  // Tall videos are as tall as fits on screen; wide ones fill the width.
+  const posters = [...(posterUrl ? [posterUrl] : []), ...video.thumbnailUrls];
+  const poster = posters[posterIndex] ?? null;
+  // Wide videos fill the width. Tall ones (Shorts, Reels) fill the width on phones,
+  // and are capped to the screen height on bigger screens.
   const frame = video.vertical
-    ? 'relative aspect-[9/16] w-[min(100%,calc(60svh*9/16))] mx-auto'
-    : 'relative aspect-video w-full';
+    ? 'relative aspect-[9/16] w-full max-w-[calc((100svh-64px)*9/16)] mx-auto bg-black'
+    : 'relative aspect-video w-full bg-black';
 
   return (
-    <div className="bg-dark">
+    <div ref={box}>
       <div className={frame}>
         {playing ? (
           <iframe
@@ -75,21 +102,33 @@ export default function VideoEmbed({ url, posterUrl, title }: Props) {
             className="absolute inset-0 w-full h-full group"
             aria-label={`Play video from ${title}`}
           >
-            {poster && !posterFailed && <Image src={poster} alt="" fill unoptimized className="object-cover" onError={() => setPosterFailed(true)} />}
-            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors" />
+            {poster && (
+              <Image
+                key={poster}
+                src={poster}
+                alt=""
+                fill
+                unoptimized
+                className="object-cover"
+                // YouTube answers a missing image with a tiny placeholder: try the next one.
+                onLoad={(e) => { if (e.currentTarget.naturalWidth <= 120) setPosterIndex((i) => i + 1); }}
+                onError={() => setPosterIndex((i) => i + 1)}
+              />
+            )}
+            <div className="absolute inset-0 bg-black/25 group-hover:bg-black/15 transition-colors" />
             <div className="absolute inset-0 flex items-center justify-center"><PlayBadge /></div>
-            <span className="absolute left-3 bottom-3 font-inter text-xs font-semibold text-cream">Play · {video.label}</span>
+            <span className="absolute left-3 bottom-3 font-inter text-xs font-semibold text-cream [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">Play · {video.label}</span>
           </button>
         )}
       </div>
-      <div className="flex justify-end px-3 py-1.5">
+      <div className="flex justify-end px-4 pt-2">
         <a
           href={video.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center min-h-[28px] font-inter text-[11px] font-semibold text-cream/75 hover:text-cream"
+          className="inline-flex items-center min-h-[28px] font-inter text-[11px] font-semibold text-warm underline-offset-2 hover:underline"
         >
-          Open in {video.provider === 'youtube' ? 'YouTube' : video.provider === 'vimeo' ? 'Vimeo' : 'Facebook'} ↗
+          Open in {PROVIDER_NAME[video.provider]} ↗
         </a>
       </div>
     </div>

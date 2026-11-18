@@ -9,8 +9,11 @@ create policy "Anyone can react to a field post" on field_post_reactions for ins
 create policy "Anyone can remove their reaction" on field_post_reactions for delete using (true);
 create policy "Field posts are publicly readable" on field_posts for select using (true);
 create policy "Anyone can create a field post" on field_posts for insert with check (true);
-create policy "server access" on group_chat_messages for all using (true) with check (true);
-create policy "server access" on group_chat_reads for all using (true) with check (true);
+create policy "Group chat messages are publicly readable" on group_chat_messages for select using (true);
+create policy "Anyone can post a group chat message" on group_chat_messages for insert with check (true);
+create policy "Anyone can delete a group chat message" on group_chat_messages for delete using (true);
+create policy "server access" on chat_messages for all using (true) with check (true);
+create policy "server access" on chat_reads for all using (true) with check (true);
 create policy "Group cohosts are publicly readable" on group_cohosts for select using (true);
 create policy "Groups are publicly readable" on groups for select using (status <> 'inactive'::group_status);
 create policy "Anyone can create a group" on groups for insert with check (true);

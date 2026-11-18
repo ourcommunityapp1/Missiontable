@@ -338,13 +338,13 @@ export type Database = {
         Update: Partial<MealInviteGuestInsert>;
         Relationships: [];
       };
-      group_chat_messages: {
+      chat_messages: {
         Row: GroupChatMessageRow;
         Insert: GroupChatMessageInsert;
         Update: Partial<GroupChatMessageInsert>;
         Relationships: [];
       };
-      group_chat_reads: {
+      chat_reads: {
         Row: GroupChatReadRow;
         Insert: GroupChatReadInsert;
         Update: Partial<GroupChatReadInsert>;

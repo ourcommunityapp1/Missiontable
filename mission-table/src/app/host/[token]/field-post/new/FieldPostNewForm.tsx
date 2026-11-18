@@ -107,7 +107,7 @@ export default function FieldPostNewForm({ token, groupId, redirectTo }: Props) 
           )}
         </p>
         {video && (
-          <div className="mt-3 max-w-[480px] border-2 border-black">
+          <div className={`mt-3 ${video.vertical ? 'max-w-[300px]' : 'max-w-[480px]'}`}>
             <VideoEmbed url={videoUrl.trim()} posterUrl={/^https?:\/\//.test(photoUrl.trim()) ? photoUrl.trim() : null} title="your update" />
           </div>
         )}

@@ -61,9 +61,14 @@ In Mixpanel, create a Funnel with step 1 = `kit_email_sent` and step 2 = `group_
 ## Group chat
 
 - One chat per group for members and hosts: `src/lib/chat.ts` (server), `src/lib/chatActions.ts` (send/remove), `/api/chat` (read + refresh, POST), `src/components/ChatPanel.tsx` (UI, refreshes every 4s while open).
-- Table `group_chat_messages` (+ `group_chat_reads` for unread badges), shaped by migration `008_group_chat.sql`.
-- **Switched off until launch**: set `GROUP_CHAT=on` in Netlify to show the Chat tabs (member page and host dashboard). Apply migration 008 first.
+- Tables `chat_messages` and `chat_reads` (unread badges), created by migration `008_group_chat.sql`. The older `group_chat_messages` table from 002 is empty and unused.
+- `GROUP_CHAT=on` (Netlify env var, set) turns the Chat tabs on for the member page and host dashboard; without it chat is hidden and `/api/chat` refuses requests.
 
 ## Videos in field posts
 
 - `src/lib/video.ts` turns YouTube (incl. Shorts/live), Vimeo and Facebook video/reel links into in-app players; `src/components/VideoEmbed.tsx` shows a poster and loads the player only when tapped. Other links open the site in a new tab.
+
+## Home-screen app icons
+
+- A member's installed group app uses the group's country photo as its icon (`src/lib/appIcons.ts`, used by the group page's Apple touch icon and the per-member manifest).
+- After adding a country photo to `public/images/countries`, run `node scripts/make-country-icons.cjs` and add the slug to `COUNTRY_ICONS`.
