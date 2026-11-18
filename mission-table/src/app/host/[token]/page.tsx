@@ -146,7 +146,7 @@ export default async function HostDashboardPage({
           )}
         </div>
 
-        <nav id="dashboard-tabs" aria-label="Dashboard sections" className="overflow-x-auto overflow-y-hidden no-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+        <nav id="dashboard-tabs" aria-label="Dashboard sections" className="overflow-x-auto overflow-y-hidden overscroll-x-contain no-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
           <ul className="flex gap-1.5 w-max min-w-full md:w-auto md:flex-wrap border-b-2 border-black">
             {TABS.map((t) => {
               const current = t.id === tab;
