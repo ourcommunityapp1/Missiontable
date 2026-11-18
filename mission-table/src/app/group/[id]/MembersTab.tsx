@@ -1,5 +1,7 @@
 'use client';
 
+import { outsideChatLabel } from '@/lib/chatTypes';
+
 type Member = { id: string; name: string; city: string | null; state: string | null; church?: string | null };
 
 type Props = {
@@ -25,7 +27,7 @@ export default function MembersTab({ members, chatLink }: Props) {
             rel="noopener noreferrer"
             className="font-inter font-semibold text-xs tracking-[0.05em] uppercase border-b-2 border-black pb-0.5 hover:text-warm transition-colors"
           >
-            Join Chat →
+            {outsideChatLabel(chatLink)} →
           </a>
         )}
       </div>

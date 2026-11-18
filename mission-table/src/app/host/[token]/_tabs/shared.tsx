@@ -2,10 +2,11 @@ import type { HostGroup, GroupMembers, FieldPostWithEngagement, GroupActivity, G
 import type { KitRow } from '@/lib/database.types';
 import type { HostLoopState } from '@/lib/gathering';
 
-export type TabId = 'overview' | 'field' | 'meals' | 'people' | 'insights' | 'settings';
+export type TabId = 'overview' | 'chat' | 'field' | 'meals' | 'people' | 'insights' | 'settings';
 
 export const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
+  { id: 'chat', label: 'Chat' },
   { id: 'field', label: 'From the field' },
   { id: 'meals', label: 'Meals' },
   { id: 'people', label: 'People' },

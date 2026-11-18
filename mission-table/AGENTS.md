@@ -38,6 +38,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | `meal_invite_responded` (server) | Guest accepts or declines an invitation | `group_id`, `invite_id`, `status` — distinct_id is the guest's `member_token` | `group/[id]/loopActions.ts` |
 | `meal_invite_cancelled` (server) | Inviter cancels an invitation | `group_id`, `invite_id` — distinct_id is the inviter's `member_token` | `group/[id]/loopActions.ts` |
 | `host_note_saved` (server) | Host saves an "Are you in?" or thank-you note | `group_id`, `kind`, `meeting_date`, `skip`, `has_body` — distinct_id is the host's `host_token` | `host/[token]/actions.ts` |
+| `chat_message_sent` (server) | Member or host posts in the group chat | `group_id`, `author_kind` (`member`/`host`) — distinct_id is the poster's `member_token` or `host_token` | `src/lib/chatActions.ts` |
+| `chat_message_removed` (server) | A message is removed (own message, or any message by a host) | `group_id`, `author_kind` (who removed it) | `src/lib/chatActions.ts` |
 | `auto_messages_toggled` (server) | Host turns automatic emails on/off | `group_id`, `on` — distinct_id is the host's `host_token` | `host/[token]/actions.ts` |
 
 `Page View` page_type values: `home`, `browse`, `country`, `group_detail`, `join_group`, `start_group`, `about`, `host_dashboard`, `host_login`, `host_kit_new`, `host_kit_edit`, `host_group_edit`, `host_field_post_new`, `other`
@@ -55,3 +57,13 @@ In Mixpanel, create a Funnel with step 1 = `kit_email_sent` and step 2 = `group_
 - `src/lib/gathering.ts` holds the schedule (`LOOP_SCHEDULE`), date math (group time zone), email builders and `runGatheringLoop`.
 - `/api/cron/gathering` (Bearer `CRON_SECRET`) runs it; `netlify/functions/gathering-loop.mts` calls it hourly. Each send is claimed in `gathering_sends` first, so it goes out at most once. Testing: `?group=<id>&now=<ISO>&dry=1&preview=1`.
 - Only groups with `groups.auto_messages = true` get emails; hosts turn it on in Overview or Settings.
+
+## Group chat
+
+- One chat per group for members and hosts: `src/lib/chat.ts` (server), `src/lib/chatActions.ts` (send/remove), `/api/chat` (read + refresh, POST), `src/components/ChatPanel.tsx` (UI, refreshes every 4s while open).
+- Table `group_chat_messages` (+ `group_chat_reads` for unread badges), shaped by migration `008_group_chat.sql`.
+- **Switched off until launch**: set `GROUP_CHAT=on` in Netlify to show the Chat tabs (member page and host dashboard). Apply migration 008 first.
+
+## Videos in field posts
+
+- `src/lib/video.ts` turns YouTube (incl. Shorts/live), Vimeo and Facebook video/reel links into in-app players; `src/components/VideoEmbed.tsx` shows a poster and loads the player only when tapped. Other links open the site in a new tab.

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createFieldPost } from './actions';
+import VideoEmbed from '@/components/VideoEmbed';
+import { toEmbeddable, siteName } from '@/lib/video';
 
 type Props = {
   token: string;
@@ -16,6 +18,10 @@ export default function FieldPostNewForm({ token, groupId, redirectTo }: Props) 
   const router = useRouter();
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
+  const video = toEmbeddable(videoUrl);
+  const looksLikeUrl = /^https?:\/\/\S+\.\S+/.test(videoUrl.trim());
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -70,6 +76,8 @@ export default function FieldPostNewForm({ token, groupId, redirectTo }: Props) 
         <input
           name="photo_url"
           type="url"
+          value={photoUrl}
+          onChange={(e) => setPhotoUrl(e.target.value)}
           placeholder="https://"
           className="w-full border-2 border-black bg-cream font-inter text-sm px-3 py-2 outline-none"
         />
@@ -78,14 +86,31 @@ export default function FieldPostNewForm({ token, groupId, redirectTo }: Props) 
       <div className="border-t-2 border-black pt-6">
         <label className="block font-inter font-semibold text-xs tracking-[0.1em] uppercase text-black mb-2">
           Video Link
-          <span className="font-normal text-warm ml-2">(optional — YouTube, Vimeo, etc.)</span>
+          <span className="font-normal text-warm ml-2">(optional)</span>
         </label>
         <input
           name="video_url"
           type="url"
+          value={videoUrl}
+          onChange={(e) => setVideoUrl(e.target.value)}
           placeholder="https://"
+          aria-describedby="video-help"
           className="w-full border-2 border-black bg-cream font-inter text-sm px-3 py-2 outline-none"
         />
+        <p id="video-help" role="status" className="font-inter text-xs mt-1 text-warm">
+          {video ? (
+            <span className="text-black font-semibold">✓ Members can watch this {video.label} right in the app.</span>
+          ) : looksLikeUrl ? (
+            <>This {siteName(videoUrl)} link will open outside the app. YouTube, Vimeo and public Facebook videos play inside it.</>
+          ) : (
+            <>YouTube, Vimeo and public Facebook videos play right in the app.</>
+          )}
+        </p>
+        {video && (
+          <div className="mt-3 max-w-[480px] border-2 border-black">
+            <VideoEmbed url={videoUrl.trim()} posterUrl={/^https?:\/\//.test(photoUrl.trim()) ? photoUrl.trim() : null} title="your update" />
+          </div>
+        )}
       </div>
 
       {error && (

@@ -266,6 +266,15 @@ export type MealInviteGuestStatus = 'invited' | 'accepted' | 'declined';
 export type MealInviteGuestRow = { id: string; invite_id: string; member_id: string; status: MealInviteGuestStatus; responded_at: string | null; seen_at: string | null };
 type MealInviteGuestInsert = Partial<MealInviteGuestRow> & { invite_id: string; member_id: string };
 
+export type GroupChatMessageRow = {
+  id: string; group_id: string; member_id: string | null; host_id: string | null; body: string;
+  created_at: string; deleted_at: string | null; deleted_by: string | null;
+};
+type GroupChatMessageInsert = Partial<GroupChatMessageRow> & { group_id: string; body: string };
+
+export type GroupChatReadRow = { group_id: string; reader_id: string; last_read_at: string };
+type GroupChatReadInsert = { group_id: string; reader_id: string; last_read_at?: string };
+
 export type Database = {
   public: {
     Tables: {
@@ -327,6 +336,18 @@ export type Database = {
         Row: MealInviteGuestRow;
         Insert: MealInviteGuestInsert;
         Update: Partial<MealInviteGuestInsert>;
+        Relationships: [];
+      };
+      group_chat_messages: {
+        Row: GroupChatMessageRow;
+        Insert: GroupChatMessageInsert;
+        Update: Partial<GroupChatMessageInsert>;
+        Relationships: [];
+      };
+      group_chat_reads: {
+        Row: GroupChatReadRow;
+        Insert: GroupChatReadInsert;
+        Update: Partial<GroupChatReadInsert>;
         Relationships: [];
       };
       members: {
