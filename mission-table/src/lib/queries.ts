@@ -205,6 +205,7 @@ export type GroupDetail = {
   dayOfMonth: number | null;
   weekOfMonth: number | null;
   dayOfWeek: string | null;
+  timezone: string;
 };
 
 type RawGroupDetailRow = {
@@ -283,6 +284,7 @@ export async function getGroupById(id: string): Promise<GroupDetail | null> {
     dayOfMonth: data.day_of_month,
     weekOfMonth: data.week_of_month,
     dayOfWeek: data.day_of_week,
+    timezone: data.timezone,
   };
 }
 
@@ -362,6 +364,7 @@ export type HostGroup = {
   day_of_week: string | null;
   meeting_time: string;
   timezone: string;
+  auto_messages: boolean;
   rhythm: string;
   time: string;
 };
@@ -400,6 +403,7 @@ type RawGroupForHost = {
   day_of_week: string | null;
   meeting_time: string;
   timezone: string;
+  auto_messages: boolean;
 };
 
 export async function getHostByToken(token: string): Promise<HostDashboardData | null> {
@@ -420,7 +424,7 @@ export async function getHostByToken(token: string): Promise<HostDashboardData |
 
   let groupsQuery = supabase
     .from('groups')
-    .select('id, name, country_slug, status, chat_link, group_type, city, state, max_size, start_date, rhythm_type, day_of_month, week_of_month, day_of_week, meeting_time, timezone');
+    .select('id, name, country_slug, status, chat_link, group_type, city, state, max_size, start_date, rhythm_type, day_of_month, week_of_month, day_of_week, meeting_time, timezone, auto_messages');
   groupsQuery = cohostedIds.length > 0
     ? groupsQuery.or(`host_id.eq.${host.id},id.in.(${cohostedIds.join(',')})`)
     : groupsQuery.eq('host_id', host.id);
@@ -444,7 +448,7 @@ export async function getHostByToken(token: string): Promise<HostDashboardData |
 }
 
 export type GroupMembers = {
-  accepted: { id: string; name: string; email: string; member_token: string; city: string | null; state: string | null }[];
+  accepted: { id: string; name: string; email: string; member_token: string; city: string | null; state: string | null; church: string | null }[];
   pending: { id: string; membershipId: string; name: string; email: string; phone: string | null; church: string | null; city: string | null; state: string | null }[];
 };
 
@@ -478,7 +482,7 @@ export async function getMembersForGroup(groupId: string): Promise<GroupMembers>
     const m = row.members;
     if (!m) continue;
     if (row.status === 'accepted') {
-      accepted.push({ id: m.id, name: m.name, email: m.email, member_token: m.member_token, city: m.city, state: m.state });
+      accepted.push({ id: m.id, name: m.name, email: m.email, member_token: m.member_token, city: m.city, state: m.state, church: m.church });
     } else {
       pending.push({ id: m.id, membershipId: row.id, name: m.name, email: m.email, phone: m.phone, church: m.church, city: m.city, state: m.state });
     }

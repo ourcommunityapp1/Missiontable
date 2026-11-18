@@ -11,6 +11,7 @@ import {
   getGroupHosts,
   getAttendanceForKits,
 } from '@/lib/queries';
+import { getHostLoopState } from '@/lib/gathering';
 import { TABS, type TabId, type DashboardData, formatDay } from './_tabs/shared';
 import OverviewTab from './_tabs/OverviewTab';
 import FieldTab from './_tabs/FieldTab';
@@ -77,7 +78,10 @@ export default async function HostDashboardPage({
     getGroupActivity(group),
     getGroupHosts(group.id),
   ]);
-  const attendance = await getAttendanceForKits(kits.map((k) => k.id));
+  const [attendance, loop] = await Promise.all([
+    getAttendanceForKits(kits.map((k) => k.id)),
+    getHostLoopState(group, host.name.split(/\s+/)[0], members.accepted),
+  ]);
   const gatheredByKit = Object.fromEntries(Object.entries(attendance).map(([id, a]) => [id, a.count]));
 
   const dashboard: DashboardData = {
@@ -90,6 +94,7 @@ export default async function HostDashboardPage({
     activity,
     cohosts,
     gatheredByKit,
+    loop,
     tabHref: (t) => hrefFor(group.id, t),
   };
   const Panel = TAB_COMPONENTS[tab];

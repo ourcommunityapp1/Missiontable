@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
-import { updateChatLink } from '../actions';
+import { updateChatLink, setAutoMessages } from '../actions';
 import { type DashboardData, SectionLabel, formatDay, btnSecondary } from './shared';
 
 export default function SettingsTab({ token, group, cohosts }: DashboardData) {
@@ -29,6 +29,27 @@ export default function SettingsTab({ token, group, cohosts }: DashboardData) {
             </div>
           ))}
         </dl>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <SectionLabel>Automatic emails</SectionLabel>
+        <div className="border-2 border-black p-5 flex flex-wrap items-center justify-between gap-4">
+          <p className="flex-[999_1_360px] font-inter text-sm leading-relaxed text-[#3A372F]">
+            {group.auto_messages ? <strong className="text-black">On. </strong> : <strong className="text-black">Off. </strong>}
+            Your “Are you in?” note goes to members 3 days before each gathering, and your thank-you the evening after. You get a reminder to write each one.
+          </p>
+          <form
+            action={async () => {
+              'use server';
+              await setAutoMessages(token, group.id, !group.auto_messages);
+              revalidatePath(`/host/${token}`);
+            }}
+          >
+            <button type="submit" className={`min-h-[44px] px-5 font-inter font-semibold text-[13px] tracking-[0.06em] uppercase ${group.auto_messages ? 'border-2 border-black' : 'bg-black text-cream'}`}>
+              {group.auto_messages ? 'Turn off' : 'Turn on'}
+            </button>
+          </form>
+        </div>
       </section>
 
       <section className="flex flex-col gap-3">

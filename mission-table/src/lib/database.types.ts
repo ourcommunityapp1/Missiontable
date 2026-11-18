@@ -42,6 +42,7 @@ type GroupRow = {
   meeting_time: string;
   timezone: string;
   max_size: number | null;
+  auto_messages: boolean;
   status: GroupStatus;
   start_date: string;
   end_date: string;
@@ -64,6 +65,7 @@ type GroupInsert = {
   meeting_time: string;
   timezone: string;
   max_size?: number | null;
+  auto_messages?: boolean;
   status?: GroupStatus;
   start_date: string;
   end_date: string;
@@ -238,6 +240,32 @@ type GroupPageViewInsert = {
   viewed_at?: string;
 };
 
+export type GatheringRsvpRow = { id: string; group_id: string; member_id: string; meeting_date: string; status: 'in' | 'out'; responded_at: string };
+type GatheringRsvpInsert = { id?: string; group_id: string; member_id: string; meeting_date: string; status: 'in' | 'out'; responded_at?: string };
+
+export type HostNoteKind = 'rsvp' | 'thanks';
+export type HostNoteRow = { id: string; group_id: string; meeting_date: string; kind: HostNoteKind; body: string | null; skip: boolean; updated_at: string };
+type HostNoteInsert = { id?: string; group_id: string; meeting_date: string; kind: HostNoteKind; body?: string | null; skip?: boolean; updated_at?: string };
+
+export type GatheringSendRow = { id: string; group_id: string; meeting_date: string; kind: string; recipients: number; sent_at: string };
+type GatheringSendInsert = { id?: string; group_id: string; meeting_date: string; kind: string; recipients?: number; sent_at?: string };
+
+export type TablePostRow = { id: string; group_id: string; member_id: string; meeting_date: string; photo_path: string | null; prayer: string | null; created_at: string };
+type TablePostInsert = { id?: string; group_id: string; member_id: string; meeting_date: string; photo_path?: string | null; prayer?: string | null; created_at?: string };
+
+export type MealInviteRow = {
+  id: string; group_id: string; inviter_member_id: string; meeting_date: string;
+  place_type: 'home' | 'restaurant'; place_name: string | null; address_line: string | null;
+  city: string | null; state: string | null; zip: string | null; arrive_time: string | null;
+  food: 'cook' | 'potluck' | 'order' | null; seats: number | null; note: string | null;
+  created_at: string; cancelled_at: string | null;
+};
+type MealInviteInsert = Partial<MealInviteRow> & { group_id: string; inviter_member_id: string; meeting_date: string; place_type: 'home' | 'restaurant' };
+
+export type MealInviteGuestStatus = 'invited' | 'accepted' | 'declined';
+export type MealInviteGuestRow = { id: string; invite_id: string; member_id: string; status: MealInviteGuestStatus; responded_at: string | null; seen_at: string | null };
+type MealInviteGuestInsert = Partial<MealInviteGuestRow> & { invite_id: string; member_id: string };
+
 export type Database = {
   public: {
     Tables: {
@@ -263,6 +291,42 @@ export type Database = {
         Row: GroupPageViewRow;
         Insert: GroupPageViewInsert;
         Update: Partial<GroupPageViewInsert>;
+        Relationships: [];
+      };
+      gathering_rsvps: {
+        Row: GatheringRsvpRow;
+        Insert: GatheringRsvpInsert;
+        Update: Partial<GatheringRsvpInsert>;
+        Relationships: [];
+      };
+      host_notes: {
+        Row: HostNoteRow;
+        Insert: HostNoteInsert;
+        Update: Partial<HostNoteInsert>;
+        Relationships: [];
+      };
+      gathering_sends: {
+        Row: GatheringSendRow;
+        Insert: GatheringSendInsert;
+        Update: Partial<GatheringSendInsert>;
+        Relationships: [];
+      };
+      table_posts: {
+        Row: TablePostRow;
+        Insert: TablePostInsert;
+        Update: Partial<TablePostInsert>;
+        Relationships: [];
+      };
+      meal_invites: {
+        Row: MealInviteRow;
+        Insert: MealInviteInsert;
+        Update: Partial<MealInviteInsert>;
+        Relationships: [];
+      };
+      meal_invite_guests: {
+        Row: MealInviteGuestRow;
+        Insert: MealInviteGuestInsert;
+        Update: Partial<MealInviteGuestInsert>;
         Relationships: [];
       };
       members: {

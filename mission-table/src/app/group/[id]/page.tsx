@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import TopNavBar from '@/components/TopNavBar';
@@ -20,18 +21,46 @@ import GroupPageTracker from './GroupPageTracker';
 import GroupTabs from './GroupTabs';
 import HeroInviteButton from './HeroInviteButton';
 import type { KitWithMeta } from './MealsTab';
+import type { MemberLoopData } from './loopTypes';
+import { localNow, gatheringOnOrAfter, gatheringBefore, getRsvps } from '@/lib/gathering';
+import { getTablePosts, getInvitesForMember } from '@/lib/memberApp';
+import { bestChurchLabel } from '@/lib/people';
 
 export const dynamic = 'force-dynamic';
+
+type SearchParams = { token?: string; tab?: string; rsvp?: string; date?: string };
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<SearchParams>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const { token } = await searchParams;
+  const group = await getGroupById(id);
+  if (!group) return {};
+  const title = group.name ?? `${group.countryName} group`;
+  if (!token || !/^[0-9a-f-]{36}$/i.test(token)) return { title: `${title} — Mission Table` };
+  // Members get an installable app for their group; the manifest carries their link.
+  return {
+    title: `${title} — Mission Table`,
+    manifest: `/group/${id}/manifest.webmanifest?token=${token}`,
+    appleWebApp: { capable: true, title: title.length > 18 ? title.split(' ').slice(0, 2).join(' ') : title, statusBarStyle: 'default' },
+    icons: { apple: '/icons/apple-touch-icon.png' },
+  };
+}
 
 export default async function GroupDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   const { id } = await params;
-  const { token } = await searchParams;
+  const { token, tab, rsvp, date } = await searchParams;
 
   const group = await getGroupById(id);
   if (!group) notFound();
@@ -56,6 +85,39 @@ export default async function GroupDetailPage({
       attendanceMembers: att?.members ?? [],
     };
   });
+
+  let loop: MemberLoopData | null = null;
+  if (isMember && currentMemberId) {
+    const rhythm = { rhythm_type: group.rhythmType, day_of_month: group.dayOfMonth, week_of_month: group.weekOfMonth, day_of_week: group.dayOfWeek };
+    const today = localNow(group.timezone).date;
+    const next = gatheringOnOrAfter(rhythm, today);
+    const prev = gatheringBefore(rhythm, today);
+    const [rsvps, tablePosts, invites] = await Promise.all([
+      next ? getRsvps(id, next) : Promise.resolve({ in: [] as string[], out: [] as string[] }),
+      getTablePosts(id),
+      getInvitesForMember(id, currentMemberId, today),
+    ]);
+    const churches = members.accepted.map((m) => m.church);
+    const toDir = (m: (typeof members.accepted)[number]) => ({ id: m.id, name: m.name, city: m.city, state: m.state, church: bestChurchLabel(m.church, churches) });
+    const meRow = members.accepted.find((m) => m.id === currentMemberId);
+    loop = {
+      groupId: id,
+      groupName: group.name ?? `${group.countryName} group`,
+      countryName: group.countryName,
+      timeLabel: group.time,
+      nextDate: next,
+      tableDate: next === today ? today : prev,
+      myRsvp: rsvps.in.includes(currentMemberId) ? 'in' : rsvps.out.includes(currentMemberId) ? 'out' : null,
+      inMembers: members.accepted.filter((m) => rsvps.in.includes(m.id)).map((m) => ({ id: m.id, name: m.name })),
+      tablePosts,
+      received: invites.received,
+      sent: invites.sent,
+      me: meRow ? toDir(meRow) : { id: currentMemberId, name: 'You', city: null, state: null, church: null },
+      directory: members.accepted.filter((m) => m.id !== currentMemberId).map(toDir),
+      autoRsvp: (rsvp === 'in' || rsvp === 'out') && date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? { status: rsvp, date } : null,
+      initialTab: tab ?? null,
+    };
+  }
 
   const nextExpectedDate = getNextExpectedMeetingDate({
     rhythmType: group.rhythmType,
@@ -210,6 +272,7 @@ export default async function GroupDetailPage({
             fieldPosts={fieldPosts}
             members={members.accepted}
             chatLink={group.chat_link}
+            loop={loop!}
             infoSlot={
               <div className="max-w-[640px] mb-8">
                 <p className="font-inter text-base text-warm mb-8">{description}</p>

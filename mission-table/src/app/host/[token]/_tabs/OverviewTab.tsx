@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { usStateName } from '@/lib/queries';
+import GatheringSection from './GatheringSection';
 import { type DashboardData, SectionLabel, formatDay, daysUntil, addDays, plural, btnPrimary, btnSecondary } from './shared';
 
 const SPANISH_SPEAKING = new Set(['spain', 'guatemala', 'honduras']);
@@ -15,7 +16,8 @@ type Task = {
   primary?: boolean;
 };
 
-export default function OverviewTab({ token, group, hostName, members, fieldPosts, activity, tabHref }: DashboardData) {
+export default function OverviewTab(props: DashboardData) {
+  const { token, group, hostName, members, fieldPosts, activity, tabHref, loop } = props;
   const firstName = hostName.split(/\s+/)[0];
   const greeting = SPANISH_SPEAKING.has(group.country_slug) ? `Hola, ${firstName}.` : `Welcome back, ${firstName}.`;
   const next = activity.nextGathering;
@@ -36,6 +38,16 @@ export default function OverviewTab({ token, group, hostName, members, fieldPost
       cta: 'Create meal →',
       href: `/host/${token}/kit/new?groupId=${group.id}`,
       primary: true,
+    });
+  }
+  if (loop.autoMessages && loop.rsvpNote && !loop.rsvpNote.sentAt && !loop.rsvpNote.saved && daysUntil(loop.rsvpNote.sendDate) <= 7) {
+    tasks.push({
+      key: 'note',
+      eyebrow: `Goes out ${formatDay(loop.rsvpNote.sendDate)}`,
+      title: 'Write your “Are you in?” note',
+      body: 'A few lines in your own words. If you skip it, a standard note signed by you goes out instead.',
+      cta: 'Write note →',
+      href: '#notes',
     });
   }
   if (members.pending.length > 0) {
@@ -129,6 +141,8 @@ export default function OverviewTab({ token, group, hostName, members, fieldPost
           </div>
         )}
       </section>
+
+      <GatheringSection {...props} />
 
       <section className="border-2 border-black bg-cream-dark px-6 py-5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-x-9 gap-y-3 font-inter text-sm text-black">

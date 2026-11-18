@@ -1,6 +1,7 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
+import { revalidatePath } from 'next/cache';
 import { getMembersForGroup, getGroupHosts, authorizeHostForGroup } from '@/lib/queries';
 import { esc } from '@/lib/escapeHtml';
 import { trackServer } from '@/lib/mixpanelServer';
@@ -166,4 +167,39 @@ export async function resendKit(token: string, kitId: string, groupId: string, g
   } catch (err) {
     console.error('Kit resend failed:', err);
   }
+}
+
+// ─── Gathering loop ───────────────────────────────────────────────────────────
+
+export async function saveHostNote(
+  token: string,
+  groupId: string,
+  meetingDate: string,
+  kind: 'rsvp' | 'thanks',
+  body: string,
+  skip: boolean,
+): Promise<{ success: true } | { success: false; error: string }> {
+  if (!(await authorizeHostForGroup(token, groupId))) return { success: false, error: 'Could not verify your host account.' };
+  if (kind !== 'rsvp' && kind !== 'thanks') return { success: false, error: 'Invalid note.' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(meetingDate)) return { success: false, error: 'Invalid date.' };
+  const { data: sentAlready } = await supabase
+    .from('gathering_sends').select('id').eq('group_id', groupId).eq('meeting_date', meetingDate).eq('kind', kind).maybeSingle();
+  if (sentAlready) return { success: false, error: 'This note has already been sent.' };
+
+  const { error } = await supabase.from('host_notes').upsert(
+    { group_id: groupId, meeting_date: meetingDate, kind, body: body.trim().slice(0, 2000) || null, skip, updated_at: new Date().toISOString() },
+    { onConflict: 'group_id,meeting_date,kind' },
+  );
+  if (error) return { success: false, error: 'Could not save your note. Please try again.' };
+  await trackServer('host_note_saved', token, { group_id: groupId, kind, meeting_date: meetingDate, skip, has_body: !!body.trim() });
+  revalidatePath(`/host/${token}`);
+  return { success: true };
+}
+
+export async function setAutoMessages(token: string, groupId: string, on: boolean) {
+  if (!(await authorizeHostForGroup(token, groupId))) throw new Error('Not authorized');
+  const { error } = await supabase.from('groups').update({ auto_messages: !!on }).eq('id', groupId);
+  if (error) throw new Error('Failed to update setting');
+  await trackServer('auto_messages_toggled', token, { group_id: groupId, on: !!on });
+  revalidatePath(`/host/${token}`);
 }

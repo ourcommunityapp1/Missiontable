@@ -31,6 +31,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | `field_post_created` (server) | Host publishes a From the Field update | `group_id`, `post_id`, `has_video` — distinct_id is the **host's `host_token`** (new precedent — every other server event uses `member_token`; not PII, same opaque-token posture) | `host/[token]/field-post/new/actions.ts` |
 | `field_post_reaction_toggled` (server) | Member reacts/unreacts to a field post | `group_id`, `post_id`, `reacted` — distinct_id is the member's `member_token` | `group/[id]/actions.ts` |
 | `field_post_comment_added` (server) | Member adds a comment to a field post | `group_id`, `post_id` — distinct_id is the member's `member_token` | `group/[id]/actions.ts` |
+| `gathering_rsvp_set` (server) | Member answers "Are you in?" (group page or one-tap email link) | `group_id`, `meeting_date`, `status` (`in`/`out`) — distinct_id is the member's `member_token` | `group/[id]/loopActions.ts` |
+| `table_post_shared` (server) | Member shares a table photo and/or prayer line on Our table | `group_id`, `meeting_date`, `has_photo`, `has_prayer` — distinct_id is the member's `member_token` | `group/[id]/loopActions.ts` |
+| `meal_invite_sent` (server) | Member invites others from the group to eat together | `group_id`, `invite_id`, `guests`, `place_type` — distinct_id is the inviter's `member_token` | `group/[id]/loopActions.ts` |
+| `meal_invite_guests_added` (server) | Inviter adds more people to an existing invitation | `group_id`, `invite_id`, `guests` — distinct_id is the inviter's `member_token` | `group/[id]/loopActions.ts` |
+| `meal_invite_responded` (server) | Guest accepts or declines an invitation | `group_id`, `invite_id`, `status` — distinct_id is the guest's `member_token` | `group/[id]/loopActions.ts` |
+| `meal_invite_cancelled` (server) | Inviter cancels an invitation | `group_id`, `invite_id` — distinct_id is the inviter's `member_token` | `group/[id]/loopActions.ts` |
+| `host_note_saved` (server) | Host saves an "Are you in?" or thank-you note | `group_id`, `kind`, `meeting_date`, `skip`, `has_body` — distinct_id is the host's `host_token` | `host/[token]/actions.ts` |
+| `auto_messages_toggled` (server) | Host turns automatic emails on/off | `group_id`, `on` — distinct_id is the host's `host_token` | `host/[token]/actions.ts` |
 
 `Page View` page_type values: `home`, `browse`, `country`, `group_detail`, `join_group`, `start_group`, `about`, `host_dashboard`, `host_login`, `host_kit_new`, `host_kit_edit`, `host_group_edit`, `host_field_post_new`, `other`
 
@@ -41,3 +49,9 @@ In Mixpanel, create a Funnel with step 1 = `kit_email_sent` and step 2 = `group_
 - Event names: `snake_case`, `object_verb` pattern
 - Property names: `snake_case`
 - No PII in event **properties** (no names, emails, phone numbers). The `member_token` used as `distinct_id` is an opaque per-member token, not PII, and is required to join server-side send events with client-side page views.
+
+## Gathering loop (automatic emails)
+
+- `src/lib/gathering.ts` holds the schedule (`LOOP_SCHEDULE`), date math (group time zone), email builders and `runGatheringLoop`.
+- `/api/cron/gathering` (Bearer `CRON_SECRET`) runs it; `netlify/functions/gathering-loop.mts` calls it hourly. Each send is claimed in `gathering_sends` first, so it goes out at most once. Testing: `?group=<id>&now=<ISO>&dry=1&preview=1`.
+- Only groups with `groups.auto_messages = true` get emails; hosts turn it on in Overview or Settings.
