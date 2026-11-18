@@ -33,12 +33,13 @@ type Props = {
   infoSlot?: React.ReactNode;
 };
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'month', label: 'This month' },
-  { key: 'table', label: 'Our table' },
-  { key: 'field', label: 'From the field' },
-  { key: 'together', label: 'Eat together' },
-  { key: 'members', label: 'Members' },
+// Short labels keep all five tabs on one line on phones, with no sideways scrolling.
+const TABS: { key: Tab; label: string; short: string }[] = [
+  { key: 'month', label: 'This month', short: 'Month' },
+  { key: 'table', label: 'Our table', short: 'Table' },
+  { key: 'field', label: 'From the field', short: 'Field' },
+  { key: 'together', label: 'Eat together', short: 'Together' },
+  { key: 'members', label: 'Members', short: 'Members' },
 ];
 
 function initialTab(t: string | null): Tab {
@@ -118,19 +119,21 @@ export default function GroupTabs(props: Props) {
 
   return (
     <div className="max-w-[820px]">
-      <div role="tablist" aria-label="Group sections" className="flex gap-0 border-b-2 border-black mb-6 overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+      <div role="tablist" aria-label="Group sections" className="flex justify-between sm:justify-start sm:gap-6 border-b-2 border-black mb-6">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             type="button"
             role="tab"
             aria-selected={active === tab.key}
+            aria-label={tab.label}
             onClick={() => selectTab(tab.key)}
-            className={`flex-none inline-flex items-center gap-1.5 font-inter font-semibold text-xs tracking-[0.05em] uppercase pt-3 pb-2.5 mr-6 border-b-[3px] -mb-0.5 transition-colors whitespace-nowrap min-h-[44px] ${
+            className={`flex-none inline-flex items-center gap-1 font-inter font-semibold text-[11px] sm:text-xs tracking-[0.03em] sm:tracking-[0.05em] uppercase pt-3 pb-2.5 border-b-[3px] -mb-0.5 transition-colors whitespace-nowrap min-h-[44px] ${
               active === tab.key ? 'border-accent text-black' : 'border-transparent text-warm hover:text-black'
             }`}
           >
-            {tab.label}
+            <span className="sm:hidden" aria-hidden="true">{tab.short}</span>
+            <span className="hidden sm:inline" aria-hidden="true">{tab.label}</span>
             {tab.key === 'together' && pendingInvites > 0 && (
               <span className="min-w-[18px] h-[18px] rounded-full bg-black text-cream text-[10px] font-bold inline-flex items-center justify-center px-1" aria-label={`${pendingInvites} invitation${pendingInvites === 1 ? '' : 's'}`}>
                 {pendingInvites}

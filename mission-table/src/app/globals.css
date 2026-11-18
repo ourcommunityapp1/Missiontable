@@ -52,3 +52,22 @@ body {
     font-variation-settings: "wght" 700, "opsz" 64, "SOFT" 0, "WONK" 1;
   }
 }
+
+/* Horizontal strips that may scroll on small screens without showing a scrollbar */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * Pages never pan sideways on phones, even if an element overflows by a few
+ * pixels. `clip` (unlike `hidden`) doesn't create a scroll container, so the
+ * sticky header keeps working.
+ */
+html,
+body {
+  overflow-x: clip;
+  max-width: 100%;
+}

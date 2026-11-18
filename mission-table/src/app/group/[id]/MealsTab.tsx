@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import type { KitRow } from '@/lib/database.types';
 import { toggleKitAttendance } from './actions';
@@ -44,8 +44,15 @@ export default function MealsTab({ kits, showTbdPlaceholder, nextExpectedDateLab
     ...(showTbdPlaceholder ? [{ key: TBD_KEY, label: 'Next Meal' }] : []),
   ];
 
+  const stripRef = useRef<HTMLDivElement>(null);
   const [activeKey, setActiveKey] = useState<string>(() => switcherItems[switcherItems.length - 1]?.key ?? TBD_KEY);
   const [expanded, setExpanded] = useState(false);
+  // On load the newest meal is selected and sits at the right end of the strip: bring it into view once.
+  useEffect(() => {
+    const strip = stripRef.current;
+    const chip = strip?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (strip && chip) strip.scrollLeft = Math.max(0, chip.offsetLeft - strip.clientWidth + chip.offsetWidth + 8);
+  }, []);
   const [attendance, setAttendance] = useState<Record<string, { count: number; members: { id: string; name: string }[] }>>(
     () => Object.fromEntries(kits.map(({ kit, attendanceCount, attendanceMembers }) => [kit.id, { count: attendanceCount, members: attendanceMembers }])),
   );
@@ -85,11 +92,12 @@ export default function MealsTab({ kits, showTbdPlaceholder, nextExpectedDateLab
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex gap-2 overflow-x-auto">
+      <div ref={stripRef} className="flex gap-2 overflow-x-auto overflow-y-hidden overscroll-x-contain no-scrollbar">
         {switcherItems.map((item) => (
           <button
             key={item.key}
             type="button"
+            aria-pressed={item.key === activeKey}
             onClick={() => { setActiveKey(item.key); setExpanded(false); }}
             className={`flex-none inline-flex items-center gap-1.5 border-2 border-black px-3.5 py-2 font-inter text-xs font-semibold transition-colors whitespace-nowrap ${
               item.key === activeKey ? 'bg-black text-cream' : 'bg-cream text-black hover:bg-cream-dark'
