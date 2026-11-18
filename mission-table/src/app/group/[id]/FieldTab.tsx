@@ -95,7 +95,7 @@ export default function FieldTab({ posts, token, currentMemberId, countryName }:
         return (
           <article key={post.id} className="border-2 border-black bg-cream">
             {post.video_url ? (
-              <div className="border-b-2 border-black">
+              <div>
                 <VideoEmbed url={post.video_url} posterUrl={post.photo_url} title={post.author_label} />
               </div>
             ) : post.photo_url ? (

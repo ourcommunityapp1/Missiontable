@@ -8,8 +8,8 @@ export type EmbeddableVideo = {
   label: string;
   /** Player URL for an <iframe>; starts playing when loaded (it's only loaded after a tap). */
   embedUrl: string;
-  /** Preview image, when the provider offers one without an API call. */
-  thumbnailUrl: string | null;
+  /** Preview images to try in order (when the provider offers them without an API call). */
+  thumbnailUrls: string[];
   /** Tall (9:16) videos: Shorts and Reels. */
   vertical: boolean;
   /** The original link, for "Open in YouTube". */
@@ -58,7 +58,10 @@ function youtube(u: URL, raw: string): EmbeddableVideo | null {
     provider: 'youtube',
     label: short ? 'YouTube Short' : 'YouTube',
     embedUrl: `https://www.youtube-nocookie.com/embed/${id}?${q.toString()}`,
-    thumbnailUrl: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+    // Shorts have a full-height portrait image (oardefault); the 4:3 one is a fallback.
+    thumbnailUrls: short
+      ? [`https://i.ytimg.com/vi/${id}/oardefault.jpg`, `https://i.ytimg.com/vi/${id}/hqdefault.jpg`]
+      : [`https://i.ytimg.com/vi/${id}/hqdefault.jpg`],
     vertical: short,
     url: raw.trim(),
   };
@@ -79,7 +82,7 @@ function vimeo(u: URL, raw: string): EmbeddableVideo | null {
     provider: 'vimeo',
     label: 'Vimeo',
     embedUrl: `https://player.vimeo.com/video/${id}?${q.toString()}`,
-    thumbnailUrl: null,
+    thumbnailUrls: [],
     vertical: false,
     url: raw.trim(),
   };
@@ -99,7 +102,7 @@ function facebook(u: URL, raw: string): EmbeddableVideo | null {
     provider: 'facebook',
     label: reel ? 'Facebook Reel' : 'Facebook',
     embedUrl: `https://www.facebook.com/plugins/video.php?${q.toString()}`,
-    thumbnailUrl: null,
+    thumbnailUrls: [],
     vertical: reel,
     url: raw.trim(),
   };

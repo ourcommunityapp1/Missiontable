@@ -26,6 +26,7 @@ import { localNow, gatheringOnOrAfter, gatheringBefore, getRsvps } from '@/lib/g
 import { getTablePosts, getInvitesForMember } from '@/lib/memberApp';
 import { bestChurchLabel } from '@/lib/people';
 import { getChatUnread, chatEnabled } from '@/lib/chat';
+import { appIconsFor } from '@/lib/appIcons';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,7 +50,8 @@ export async function generateMetadata({
     title: `${title} — Mission Table`,
     manifest: `/group/${id}/manifest.webmanifest?token=${token}`,
     appleWebApp: { capable: true, title: title.length > 18 ? title.split(' ').slice(0, 2).join(' ') : title, statusBarStyle: 'default' },
-    icons: { apple: '/icons/apple-touch-icon.png' },
+    // The home-screen icon is the group's country photo.
+    icons: { apple: appIconsFor(group.countrySlug).apple },
   };
 }
 

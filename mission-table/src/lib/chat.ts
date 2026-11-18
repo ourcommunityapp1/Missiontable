@@ -93,7 +93,7 @@ export async function loadChat(viewer: ChatViewer, opts: { since?: string; befor
   if (opts.since && !Number.isNaN(Date.parse(opts.since))) {
     const from = new Date(Date.parse(opts.since) - OVERLAP_MS).toISOString();
     const { data } = await supabase
-      .from('group_chat_messages')
+      .from('chat_messages')
       .select(COLUMNS)
       .eq('group_id', viewer.groupId)
       .or(`created_at.gt.${from},deleted_at.gt.${from}`)
@@ -103,7 +103,7 @@ export async function loadChat(viewer: ChatViewer, opts: { since?: string; befor
   }
 
   let q = supabase
-    .from('group_chat_messages')
+    .from('chat_messages')
     .select(COLUMNS)
     .eq('group_id', viewer.groupId)
     .is('deleted_at', null);
@@ -117,7 +117,7 @@ export async function loadChat(viewer: ChatViewer, opts: { since?: string; befor
 
 export async function markChatRead(viewer: ChatViewer): Promise<void> {
   await supabase
-    .from('group_chat_reads')
+    .from('chat_reads')
     .upsert({ group_id: viewer.groupId, reader_id: viewer.id, last_read_at: new Date().toISOString() }, { onConflict: 'group_id,reader_id' });
 }
 
@@ -125,13 +125,13 @@ export async function markChatRead(viewer: ChatViewer): Promise<void> {
 export async function getChatUnread(groupId: string, readerId: string): Promise<number> {
   try {
     const { data: read } = await supabase
-      .from('group_chat_reads')
+      .from('chat_reads')
       .select('last_read_at')
       .eq('group_id', groupId)
       .eq('reader_id', readerId)
       .maybeSingle() as unknown as { data: { last_read_at: string } | null };
     let q = supabase
-      .from('group_chat_messages')
+      .from('chat_messages')
       .select('id', { count: 'exact', head: true })
       .eq('group_id', groupId)
       .is('deleted_at', null)
@@ -158,7 +158,7 @@ export async function postChatMessage(viewer: ChatViewer, rawBody: unknown): Pro
 
   const authorCol = viewer.kind === 'host' ? 'host_id' : 'member_id';
   const { count: recent } = await supabase
-    .from('group_chat_messages')
+    .from('chat_messages')
     .select('id', { count: 'exact', head: true })
     .eq('group_id', viewer.groupId)
     .eq(authorCol, viewer.id)
@@ -166,7 +166,7 @@ export async function postChatMessage(viewer: ChatViewer, rawBody: unknown): Pro
   if ((recent ?? 0) >= BURST_MAX) return { success: false, error: 'You’re sending messages quickly. Wait a moment and try again.' };
 
   const { data, error } = await supabase
-    .from('group_chat_messages')
+    .from('chat_messages')
     .insert(viewer.kind === 'host' ? { group_id: viewer.groupId, body, host_id: viewer.id } : { group_id: viewer.groupId, body, member_id: viewer.id })
     .select(COLUMNS)
     .single() as unknown as { data: GroupChatMessageRow | null; error: unknown };
@@ -180,7 +180,7 @@ export async function postChatMessage(viewer: ChatViewer, rawBody: unknown): Pro
 export async function removeChatMessage(viewer: ChatViewer, messageId: unknown): Promise<{ success: boolean; error?: string }> {
   if (typeof messageId !== 'string' || !UUID.test(messageId)) return { success: false, error: 'Message not found.' };
   const { data: row } = await supabase
-    .from('group_chat_messages')
+    .from('chat_messages')
     .select(COLUMNS)
     .eq('id', messageId)
     .eq('group_id', viewer.groupId)
@@ -192,7 +192,7 @@ export async function removeChatMessage(viewer: ChatViewer, messageId: unknown):
   if (!mine && viewer.kind !== 'host') return { success: false, error: 'You can only remove your own messages.' };
 
   const { error } = await supabase
-    .from('group_chat_messages')
+    .from('chat_messages')
     .update({ deleted_at: new Date().toISOString(), deleted_by: viewer.id })
     .eq('id', messageId);
   return error ? { success: false, error: 'Could not remove it. Please try again.' } : { success: true };

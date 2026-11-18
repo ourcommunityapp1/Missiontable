@@ -20,7 +20,7 @@ begin
                         'field_post_comments','group_chat_messages',
                         'group_page_views','gathering_rsvps','host_notes','gathering_sends',
                         'table_posts','meal_invites','meal_invite_guests',
-                        'group_chat_reads')
+                        'chat_messages','chat_reads')
   loop
     execute format('drop policy %I on public.%I', p.policyname, p.tablename);
   end loop;

@@ -61,7 +61,7 @@ In Mixpanel, create a Funnel with step 1 = `kit_email_sent` and step 2 = `group_
 ## Group chat
 
 - One chat per group for members and hosts: `src/lib/chat.ts` (server), `src/lib/chatActions.ts` (send/remove), `/api/chat` (read + refresh, POST), `src/components/ChatPanel.tsx` (UI, refreshes every 4s while open).
-- Table `group_chat_messages` (+ `group_chat_reads` for unread badges), shaped by migration `008_group_chat.sql`.
+- Tables `chat_messages` and `chat_reads` (unread badges), created by migration `008_group_chat.sql`. The older `group_chat_messages` table from 002 is empty and unused.
 - **Switched off until launch**: set `GROUP_CHAT=on` in Netlify to show the Chat tabs (member page and host dashboard). Apply migration 008 first.
 
 ## Videos in field posts
