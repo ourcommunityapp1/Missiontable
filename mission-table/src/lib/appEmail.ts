@@ -65,8 +65,8 @@ export function appEmailHtml(o: { groupName: string; hostFirstName: string; coun
     <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase">On iPhone</p>
     <table role="presentation" style="border-collapse:collapse;width:100%;margin:0 0 14px">
       ${step(1, 'Open the link above in <strong>Safari</strong>')}
-      ${step(2, 'Tap <strong>Share</strong> (the square with an arrow)')}
-      ${step(3, 'Tap <strong>Add to Home Screen</strong>, then <strong>Add</strong>')}
+      ${step(2, 'Tap <strong>☰</strong> in the address bar, then <strong>Share</strong><br><span style="font-size:13px;color:#625E53">Older iPhones: tap the Share button (a square with an arrow) at the bottom</span>')}
+      ${step(3, 'Scroll down, tap <strong>Add to Home Screen</strong>, then <strong>Add</strong>')}
     </table>
     <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase">On Android</p>
     <table role="presentation" style="border-collapse:collapse;width:100%;margin:0 0 18px">
