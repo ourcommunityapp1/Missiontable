@@ -40,6 +40,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | `host_note_saved` (server) | Host saves an "Are you in?" or thank-you note | `group_id`, `kind`, `meeting_date`, `skip`, `has_body` — distinct_id is the host's `host_token` | `host/[token]/actions.ts` |
 | `chat_message_sent` (server) | Member or host posts in the group chat | `group_id`, `author_kind` (`member`/`host`) — distinct_id is the poster's `member_token` or `host_token` | `src/lib/chatActions.ts` |
 | `chat_message_removed` (server) | A message is removed (own message, or any message by a host) | `group_id`, `author_kind` (who removed it) | `src/lib/chatActions.ts` |
+| `install_modal_shown` | The "add to home screen" how-to opens | `group_id`, `trigger` (`email`/`auto`/`card`), `kind` (`ios-safari`, `ios-other`, `in-app`, `android`, `desktop`) | `group/[id]/MemberApp.tsx` |
+| `install_modal_closed` | Member closes the how-to | `group_id`, `outcome` (`done`/`later`), `kind` | `group/[id]/MemberApp.tsx` |
+| `install_prompt_answered` | Android/desktop Chrome install prompt answered | `group_id`, `outcome` | `group/[id]/MemberApp.tsx` |
+| `group_app_opened` (server) | Member opens the group from their home screen (once per session) | `group_id`, `first_open`, `platform` — distinct_id is the member's `member_token` | `group/[id]/loopActions.ts` |
+| `app_email_sent` (server) | Host emails members who don't have the app | `group_id`, `recipients`, `sent` — distinct_id is the host's `host_token` | `host/[token]/actions.ts` |
 | `auto_messages_toggled` (server) | Host turns automatic emails on/off | `group_id`, `on` — distinct_id is the host's `host_token` | `host/[token]/actions.ts` |
 
 `Page View` page_type values: `home`, `browse`, `country`, `group_detail`, `join_group`, `start_group`, `about`, `host_dashboard`, `host_login`, `host_kit_new`, `host_kit_edit`, `host_group_edit`, `host_field_post_new`, `other`
@@ -72,6 +77,9 @@ In Mixpanel, create a Funnel with step 1 = `kit_email_sent` and step 2 = `group_
 
 - A member's installed group app uses the group's country photo as its icon (`src/lib/appIcons.ts`, used by the group page's Apple touch icon and the per-member manifest).
 - After adding a country photo to `public/images/countries`, run `node scripts/make-country-icons.cjs` and add the slug to `COUNTRY_ICONS`.
+- **How-to modal** (`InstallModal.tsx`, detection in `installEnv.ts`): steps for iPhone Safari, other iPhone browsers, in-app browsers (open in Safari/Chrome first), Android (one-tap install when Chrome offers it) and computers (QR code to the member's link). Opens from `?install=1` (the email link), once per visit on phones after 6s if nothing else is open, and from the This month card. "Remind me later" waits a week; "I've added it" stops it on that device.
+- **Who has it**: opening from the home screen calls `recordAppOpen`, stored in `member_app_opens` (migration 009).
+- **App email** (`src/lib/appEmail.ts`): hosts send it from Settings → The group app (Overview nudges when under half have it). Goes only to members without the app, at most once a day per group (claimed in `gathering_sends`, kind `app_email`). Preview: `/host/<token>/app-email?group=<id>`.
 
 ## Member app (group page with a member link)
 

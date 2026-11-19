@@ -17,7 +17,7 @@ type Task = {
 };
 
 export default function OverviewTab(props: DashboardData) {
-  const { token, group, hostName, members, fieldPosts, activity, tabHref, loop } = props;
+  const { token, group, hostName, members, fieldPosts, activity, tabHref, loop, app } = props;
   const firstName = hostName.split(/\s+/)[0];
   const greeting = SPANISH_SPEAKING.has(group.country_slug) ? `Hola, ${firstName}.` : `Welcome back, ${firstName}.`;
   const next = activity.nextGathering;
@@ -72,6 +72,18 @@ export default function OverviewTab(props: DashboardData) {
         : 'A short note from the field helps your group pray specifically. A photo and a prayer request is enough.',
       cta: 'Write update →',
       href: tabHref('field'),
+    });
+  }
+
+  const lastAppEmailDays = app.lastSent ? -daysUntil(app.lastSent.at.slice(0, 10)) : null;
+  if (app.members >= 2 && app.withApp < app.members / 2 && (lastAppEmailDays === null || lastAppEmailDays > 30)) {
+    tasks.push({
+      key: 'app',
+      eyebrow: `${app.withApp} of ${app.members} have the app`,
+      title: 'Help members put the group on their phone',
+      body: 'One email shows each member how, step by step for their phone. Members with the app see messages, meals and “Are you in?” in one tap.',
+      cta: 'Send the app email →',
+      href: `${tabHref('settings')}#app`,
     });
   }
 

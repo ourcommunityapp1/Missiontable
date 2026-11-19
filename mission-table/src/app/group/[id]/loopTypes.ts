@@ -52,4 +52,7 @@ export type GroupInfo = {
   place: string | null;
   chatLink: string | null;
   chatEnabled: boolean;
+  /** Home-screen icon (the country photo) and the name under it. */
+  iconUrl: string;
+  shortName: string;
 };

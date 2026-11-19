@@ -1,5 +1,6 @@
 'use server';
 
+import { sendAppEmail, type AppEmailResult } from '@/lib/appEmail';
 import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
 import { getMembersForGroup, getGroupHosts, authorizeHostForGroup } from '@/lib/queries';
@@ -202,4 +203,13 @@ export async function setAutoMessages(token: string, groupId: string, on: boolea
   if (error) throw new Error('Failed to update setting');
   await trackServer('auto_messages_toggled', token, { group_id: groupId, on: !!on });
   revalidatePath(`/host/${token}`);
+}
+
+/** Emails members who haven't put the group app on their phone yet. */
+export async function sendMembersAppEmail(token: string, groupId: string): Promise<AppEmailResult> {
+  if (!(await authorizeHostForGroup(token, groupId))) return { success: false, error: 'Could not verify your host account.' };
+  const res = await sendAppEmail(groupId);
+  if (res.success) await trackServer('app_email_sent', token, { group_id: groupId, recipients: res.recipients, sent: res.sent });
+  revalidatePath(`/host/${token}`);
+  return res;
 }

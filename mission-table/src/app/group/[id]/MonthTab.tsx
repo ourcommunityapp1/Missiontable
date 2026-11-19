@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useState } from 'react';
 import type { InviteView } from '@/lib/memberApp';
 import InviteFlow from './InviteFlow';
-import InstallCard from './InstallCard';
 import MealCard from './MealCard';
 import { ShareTable, TablePhotos } from './TableShare';
 import { toggleKitAttendance } from './actions';
@@ -22,6 +21,8 @@ type Props = {
   onAnswer: (status: 'in' | 'out') => void;
   inviteFlowOpen: boolean;
   setInviteFlowOpen: (open: boolean) => void;
+  /** "Put the group on your phone", when this device doesn't have it yet. */
+  installSlot?: React.ReactNode;
 };
 
 const label = 'font-inter font-bold text-[11px] tracking-[0.12em] uppercase text-black';
@@ -265,7 +266,7 @@ export default function MonthTab(props: Props) {
       )}
 
       <PastMeals token={token} loop={loop} kits={past} />
-      <InstallCard groupName={info.name} />
+      {props.installSlot}
     </div>
   );
 }

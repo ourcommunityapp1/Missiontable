@@ -305,3 +305,26 @@ export async function cancelInvite(token: string, groupId: string, inviteId: str
   revalidatePath(`/group/${groupId}`);
   return { success: true };
 }
+
+// ─── The installed app ────────────────────────────────────────────────────────
+
+/** Called when a member opens the group from their home screen. */
+export async function recordAppOpen(token: string, groupId: string, platform: string): Promise<Result> {
+  const memberId = await getMemberIdForToken(groupId, token);
+  if (!memberId) return { success: false, error: 'Could not verify your membership.' };
+  const plat = ['ios', 'android', 'desktop', 'other'].includes(platform) ? platform : 'other';
+  const now = new Date().toISOString();
+  const { data: existing } = await supabase
+    .from('member_app_opens')
+    .select('opens')
+    .eq('group_id', groupId)
+    .eq('member_id', memberId)
+    .maybeSingle() as unknown as { data: { opens: number } | null };
+  if (existing) {
+    await supabase.from('member_app_opens').update({ last_opened_at: now, opens: existing.opens + 1, platform: plat }).eq('group_id', groupId).eq('member_id', memberId);
+  } else {
+    await supabase.from('member_app_opens').insert({ group_id: groupId, member_id: memberId, platform: plat });
+  }
+  await trackServer('group_app_opened', token, { group_id: groupId, first_open: !existing, platform: plat });
+  return { success: true };
+}

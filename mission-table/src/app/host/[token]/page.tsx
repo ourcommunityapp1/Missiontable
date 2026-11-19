@@ -13,6 +13,7 @@ import {
 } from '@/lib/queries';
 import { getHostLoopState } from '@/lib/gathering';
 import { getChatUnread, chatEnabled } from '@/lib/chat';
+import { getAppStats } from '@/lib/appEmail';
 import { TABS, type TabId, type DashboardData, formatDay } from './_tabs/shared';
 import OverviewTab from './_tabs/OverviewTab';
 import ChatTab from './_tabs/ChatTab';
@@ -83,10 +84,11 @@ export default async function HostDashboardPage({
     getGroupActivity(group),
     getGroupHosts(group.id),
   ]);
-  const [attendance, loop, chatUnread] = await Promise.all([
+  const [attendance, loop, chatUnread, app] = await Promise.all([
     getAttendanceForKits(kits.map((k) => k.id)),
     getHostLoopState(group, host.name.split(/\s+/)[0], members.accepted),
     tab === 'chat' || !chatEnabled() ? Promise.resolve(0) : getChatUnread(group.id, host.id),
+    getAppStats(group.id),
   ]);
   const gatheredByKit = Object.fromEntries(Object.entries(attendance).map(([id, a]) => [id, a.count]));
 
@@ -101,6 +103,7 @@ export default async function HostDashboardPage({
     cohosts,
     gatheredByKit,
     loop,
+    app,
     tabHref: (t) => hrefFor(group.id, t),
   };
   const Panel = TAB_COMPONENTS[tab];

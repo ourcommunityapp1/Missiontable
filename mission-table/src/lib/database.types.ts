@@ -275,6 +275,9 @@ type GroupChatMessageInsert = Partial<GroupChatMessageRow> & { group_id: string;
 export type GroupChatReadRow = { group_id: string; reader_id: string; last_read_at: string };
 type GroupChatReadInsert = { group_id: string; reader_id: string; last_read_at?: string };
 
+export type MemberAppOpenRow = { group_id: string; member_id: string; first_opened_at: string; last_opened_at: string; opens: number; platform: string | null };
+type MemberAppOpenInsert = Partial<MemberAppOpenRow> & { group_id: string; member_id: string };
+
 export type Database = {
   public: {
     Tables: {
@@ -342,6 +345,12 @@ export type Database = {
         Row: GroupChatMessageRow;
         Insert: GroupChatMessageInsert;
         Update: Partial<GroupChatMessageInsert>;
+        Relationships: [];
+      };
+      member_app_opens: {
+        Row: MemberAppOpenRow;
+        Insert: MemberAppOpenInsert;
+        Update: Partial<MemberAppOpenInsert>;
         Relationships: [];
       };
       chat_reads: {

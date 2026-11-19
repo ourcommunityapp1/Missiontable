@@ -10,7 +10,11 @@ import MembersSheet from './MembersSheet';
 import CompanySheet from './CompanySheet';
 import InvitePopup from './InvitePopup';
 import InviteModal from './InviteModal';
-import { setRsvp, markInvitesSeen } from './loopActions';
+import InstallModal, { type DeferredInstall } from './InstallModal';
+import InstallCard from './InstallCard';
+import { currentInstallEnv, installMarkedDone, installNudgeAllowed, markInstallDone, snoozeInstall, type InstallEnv } from './installEnv';
+import { setRsvp, markInvitesSeen, recordAppOpen } from './loopActions';
+import { track } from '@/lib/mixpanel';
 import type { GroupInfo, KitWithMeta, MemberLoopData } from './loopTypes';
 
 type Tab = 'home' | 'month';
@@ -23,13 +27,15 @@ type Props = {
   fieldPosts: FieldPostWithEngagement[];
   /** Chat messages from others since this member last read the chat. */
   chatUnread: number;
+  /** Opened from the "put it on your phone" email (?install=1). */
+  installRequested?: boolean;
 };
 
 // Links from emails and older versions of the app still land in the right place.
 const MONTH_TABS = new Set(['month', 'meals', 'table', 'together']);
 const initialTab = (t: string | null): Tab => (t && MONTH_TABS.has(t) ? 'month' : 'home');
 
-export default function MemberApp({ token, info, loop, kits, fieldPosts, chatUnread }: Props) {
+export default function MemberApp({ token, info, loop, kits, fieldPosts, chatUnread, installRequested = false }: Props) {
   const [tab, setTab] = useState<Tab>(() => initialTab(loop.initialTab));
   const [membersOpen, setMembersOpen] = useState(loop.initialTab === 'members');
   const [friendInviteOpen, setFriendInviteOpen] = useState(false);
@@ -47,6 +53,65 @@ export default function MemberApp({ token, info, loop, kits, fieldPosts, chatUnr
   );
   const [unread, setUnread] = useState(() => (initialTab(loop.initialTab) === 'home' ? 0 : chatUnread));
   const handledLink = useRef(false);
+
+  // ── Home-screen app ──
+  const [install, setInstall] = useState<{ env: InstallEnv } | null>(null);
+  const [deferred, setDeferred] = useState<DeferredInstall | null>(null);
+  const [showInstallCard, setShowInstallCard] = useState(false);
+  const overlayOpen = useRef(false);
+  const anyOverlay = !!popup || companyOpen || membersOpen || friendInviteOpen || inviteFlowOpen;
+  useEffect(() => { overlayOpen.current = anyOverlay; }, [anyOverlay]);
+
+  function openInstall(trigger: 'email' | 'auto' | 'card') {
+    const env = currentInstallEnv();
+    setInstall({ env });
+    track('install_modal_shown', { group_id: loop.groupId, trigger, kind: env.kind });
+  }
+  function closeInstall(outcome: 'done' | 'later') {
+    if (outcome === 'done') markInstallDone(); else snoozeInstall();
+    if (outcome === 'done') setShowInstallCard(false);
+    track('install_modal_closed', { group_id: loop.groupId, outcome, kind: install?.env.kind });
+    setInstall(null);
+  }
+  async function runInstallPrompt() {
+    if (!deferred) return;
+    await deferred.prompt();
+    const { outcome } = await deferred.userChoice;
+    track('install_prompt_answered', { group_id: loop.groupId, outcome });
+    setDeferred(null);
+    if (outcome === 'accepted') { markInstallDone(); setShowInstallCard(false); setInstall(null); }
+  }
+
+  useEffect(() => {
+    const env = currentInstallEnv();
+    // Opened from the home screen: note it once per session so hosts can see who has the app.
+    if (env.kind === 'standalone') {
+      try {
+        if (sessionStorage.getItem('mt-app-open') !== loop.groupId) {
+          sessionStorage.setItem('mt-app-open', loop.groupId);
+          void recordAppOpen(token, loop.groupId, env.platform);
+        }
+      } catch { void recordAppOpen(token, loop.groupId, env.platform); }
+      return;
+    }
+    const onPrompt = (e: Event) => { e.preventDefault(); setDeferred(e as DeferredInstall); };
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    // The card stays until "I've added it"; "Remind me later" only pauses the pop-up.
+    timers.push(setTimeout(() => setShowInstallCard(!installMarkedDone()), 0));
+    if (installRequested) {
+      timers.push(setTimeout(() => openInstall('email'), 400));
+    } else if (env.kind !== 'desktop' && installNudgeAllowed()) {
+      // Once per visit on a phone, after a moment, and never on top of another pop-up.
+      timers.push(setTimeout(() => {
+        let shown = false;
+        try { shown = sessionStorage.getItem('mt-install-shown') === '1'; sessionStorage.setItem('mt-install-shown', '1'); } catch { /* ignore */ }
+        if (!shown && !overlayOpen.current) openInstall('auto');
+      }, 6000));
+    }
+    return () => { window.removeEventListener('beforeinstallprompt', onPrompt); timers.forEach(clearTimeout); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const pendingInvites = loop.received.filter((i) => i.myStatus === 'invited').length;
   const phase = phaseOf(loop);
@@ -201,6 +266,7 @@ export default function MemberApp({ token, info, loop, kits, fieldPosts, chatUnr
             onAnswer={answer}
             inviteFlowOpen={inviteFlowOpen}
             setInviteFlowOpen={setInviteFlowOpen}
+            installSlot={showInstallCard ? <InstallCard groupName={info.name} iconUrl={info.iconUrl} onShowHow={() => openInstall('card')} /> : null}
           />
         )}
       </div>
@@ -234,6 +300,20 @@ export default function MemberApp({ token, info, loop, kits, fieldPosts, chatUnr
             void markInvitesSeen(token, loop.groupId, [popup.id]);
             setPopup(null);
           }}
+        />
+      )}
+
+      {install && (
+        <InstallModal
+          env={install.env}
+          groupName={info.name}
+          shortName={info.shortName}
+          iconUrl={info.iconUrl}
+          appUrl={typeof window === 'undefined' ? '' : `${window.location.origin}/group/${info.id}?token=${token}&install=1`}
+          deferred={deferred}
+          onInstallPrompt={() => void runInstallPrompt()}
+          onDone={() => closeInstall('done')}
+          onLater={() => closeInstall('later')}
         />
       )}
 
