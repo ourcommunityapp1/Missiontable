@@ -25,6 +25,9 @@ const ICON = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke
 function ShareIcon() {
   return <svg {...ICON}><path d="M12 15V3" /><path d="M8 7l4-4 4 4" /><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1" /></svg>;
 }
+function MenuIcon() {
+  return <svg {...ICON}><path d="M4 7h16M4 12h16M4 17h10" /></svg>;
+}
 function AddIcon() {
   return <svg {...ICON}><rect x="3.5" y="3.5" width="17" height="17" rx="3" /><path d="M12 8v8M8 12h8" /></svg>;
 }
@@ -98,16 +101,30 @@ export default function InstallModal(props: Props) {
   }, [env.kind, appUrl]);
 
   let body: React.ReactNode;
-  if (env.kind === 'ios-safari' || env.kind === 'ios-other') {
+  if (env.kind === 'ios-safari') {
+    // Current Safari keeps Share in the ☰ menu of the address bar; older versions show it in the toolbar.
+    body = (
+      <Steps
+        steps={[
+          {
+            icon: <MenuIcon />,
+            title: <>Tap <strong>☰</strong> in the address bar</>,
+            hint: <>On older iPhones, skip this: the <strong>Share</strong> button <span className="inline-flex align-middle"><ShareIcon /></span> is at the bottom of the screen (top right on iPad).</>,
+          },
+          { icon: <ShareIcon />, title: <>Tap <strong>Share</strong></>, hint: 'It’s at the top of the menu.' },
+          { icon: <AddIcon />, title: <>Scroll down, tap <strong>Add to Home Screen</strong></>, hint: 'You may need to tap “More” or scroll the list.' },
+          { title: <>Tap <strong>Add</strong></>, hint: `“${shortName}” appears on your home screen. Open it from there from now on.` },
+        ]}
+      />
+    );
+  } else if (env.kind === 'ios-other') {
     body = (
       <Steps
         steps={[
           {
             icon: <ShareIcon />,
             title: <>Tap the <strong>Share</strong> button</>,
-            hint: env.kind === 'ios-safari'
-              ? <>It’s at the bottom of the screen (top right on iPad). Don’t see it? Tap <span className="inline-flex align-middle"><DotsIcon /></span> first.</>
-              : <>In {env.browser} it’s in the address bar or the <span className="inline-flex align-middle"><DotsIcon /></span> menu.</>,
+            hint: <>In {env.browser} it’s in the address bar or the <span className="inline-flex align-middle"><DotsIcon /></span> menu.</>,
           },
           { icon: <AddIcon />, title: <>Scroll down, tap <strong>Add to Home Screen</strong></>, hint: 'You may need to tap “More” or scroll the list.' },
           { title: <>Tap <strong>Add</strong></>, hint: `“${shortName}” appears on your home screen. Open it from there from now on.` },
