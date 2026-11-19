@@ -10,8 +10,12 @@ type Props = {
   as: ChatAs;
   /** The group's WhatsApp/GroupMe link, if it has one. */
   outsideChatLink?: string | null;
-  /** Conversation starters shown while the chat is empty. */
+  /** Conversation starters shown while there are no messages yet. */
   prompts?: string[];
+  /** Group activity (meals, field updates…) shown between messages by time. */
+  feed?: { id: string; at: string; node: React.ReactNode }[];
+  /** Jump to the newest message when the chat opens (off for the Home feed, which opens at the top). */
+  scrollToEndOnLoad?: boolean;
 };
 
 type Item = ChatMessage & { pending?: boolean; failed?: boolean };
@@ -91,7 +95,25 @@ function Body({ text, mine }: { text: string; mine: boolean }) {
   );
 }
 
-export default function ChatPanel({ groupId, token, as, outsideChatLink, prompts = [] }: Props) {
+function Starters({ prompts, onPick }: { prompts: string[]; onPick: (p: string) => void }) {
+  return (
+    <div className="flex gap-2 overflow-x-auto overflow-y-hidden overscroll-x-contain no-scrollbar sm:flex-wrap">
+      {prompts.map((p) => (
+        <button
+          key={p}
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onPick(p)}
+          className="flex-none sm:flex-initial min-h-[40px] px-3 border-2 border-black bg-cream font-inter text-[13px] text-black text-left hover:bg-black hover:text-cream"
+        >
+          {p}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export default function ChatPanel({ groupId, token, as, outsideChatLink, prompts = [], feed = [], scrollToEndOnLoad = true }: Props) {
   const [messages, setMessages] = useState<Item[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [hasMore, setHasMore] = useState(false);
@@ -100,6 +122,7 @@ export default function ChatPanel({ groupId, token, as, outsideChatLink, prompts
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
   const [newBelow, setNewBelow] = useState(0);
+  const [composing, setComposing] = useState(false);
 
   const cursor = useRef<string | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
@@ -150,7 +173,7 @@ export default function ChatPanel({ groupId, token, as, outsideChatLink, prompts
       setMessages(page.messages);
       setHasMore(page.hasMore);
       setStatus('ready');
-      if (page.messages.length > 0) scrollToEnd();
+      if (page.messages.length > 0 && scrollToEndOnLoad) scrollToEnd();
     });
     const timer = setInterval(() => void refresh(), REFRESH_MS);
     const onVisible = () => { if (document.visibilityState === 'visible') void refresh(); };
@@ -160,7 +183,7 @@ export default function ChatPanel({ groupId, token, as, outsideChatLink, prompts
       clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [groupId, token, as, refresh, scrollToEnd]);
+  }, [groupId, token, as, refresh, scrollToEnd, scrollToEndOnLoad]);
 
   // Grow the box with the text, up to about five lines.
   useEffect(() => {
@@ -232,6 +255,12 @@ export default function ChatPanel({ groupId, token, as, outsideChatLink, prompts
     }
   }
 
+  type Row = { type: 'msg'; id: string; at: string; m: Item } | { type: 'feed'; id: string; at: string; node: React.ReactNode };
+  const rows: Row[] = [
+    ...messages.map((m): Row => ({ type: 'msg', id: m.id, at: m.createdAt, m })),
+    ...feed.map((f): Row => ({ type: 'feed', id: f.id, at: f.at, node: f.node })),
+  ].sort((a, b) => a.at.localeCompare(b.at));
+
   return (
     <div className="flex flex-col">
       {outsideChatLink && (
@@ -256,48 +285,46 @@ export default function ChatPanel({ groupId, token, as, outsideChatLink, prompts
       )}
 
       <div aria-live="polite" aria-relevant="additions" className="flex flex-col min-w-0">
-        {status === 'loading' && <p className="font-inter text-sm text-warm py-10 text-center">Loading messages…</p>}
+        {status === 'loading' && feed.length === 0 && <p className="font-inter text-sm text-warm py-10 text-center">Loading messages…</p>}
         {status === 'error' && (
-          <p className="font-inter text-sm text-warm py-10 text-center">Couldn’t load the chat. Check your connection and reopen this tab.</p>
+          <p className="font-inter text-sm text-warm py-6 text-center">Couldn’t load messages. Check your connection and try again.</p>
         )}
-        {status === 'ready' && messages.length === 0 && (
+        {status === 'ready' && messages.length === 0 && feed.length === 0 && (
           <div className="border-2 border-black bg-cream-dark p-6 flex flex-col gap-4">
             <div>
               <p className="font-fraunces font-semibold text-[22px] leading-tight text-black">Start the conversation</p>
               <p className="font-inter text-sm text-warm mt-1">Everyone in the group, including the hosts, can read and reply here.</p>
             </div>
-            {prompts.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {prompts.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => { setDraft(p); input.current?.focus(); }}
-                    className="min-h-[40px] px-3 border-2 border-black bg-cream font-inter text-[13px] text-black text-left hover:bg-black hover:text-cream"
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            )}
+            {prompts.length > 0 && <Starters prompts={prompts} onPick={(p) => { setDraft(p); input.current?.focus(); }} />}
           </div>
         )}
 
-        {messages.map((m, i) => {
-          const prev = messages[i - 1];
-          const newDay = !prev || new Date(prev.createdAt).toDateString() !== new Date(m.createdAt).toDateString();
+        {rows.map((row, i) => {
+          const prevRow = rows[i - 1];
+          const newDay = !prevRow || new Date(prevRow.at).toDateString() !== new Date(row.at).toDateString();
+          const separator = newDay && (
+            <div className="flex items-center gap-3 my-4" role="separator">
+              <span className="flex-1 h-px bg-black/20" />
+              <span className="font-inter font-semibold text-[10px] tracking-[0.12em] uppercase text-warm">{dayLabel(row.at)}</span>
+              <span className="flex-1 h-px bg-black/20" />
+            </div>
+          );
+          if (row.type === 'feed') {
+            return (
+              <Fragment key={row.id}>
+                {separator}
+                <div className="mt-3 min-w-0">{row.node}</div>
+              </Fragment>
+            );
+          }
+          const m = row.m;
+          const prev = prevRow?.type === 'msg' ? prevRow.m : null;
           const startsCluster = newDay || !prev || prev.authorId !== m.authorId || Date.parse(m.createdAt) - Date.parse(prev.createdAt) > CLUSTER_MS;
           const isSelected = selected === m.id;
           const roleTag = m.role === 'host' ? 'Host' : m.role === 'cohost' ? 'Co-host' : null;
           return (
             <Fragment key={m.id}>
-              {newDay && (
-                <div className="flex items-center gap-3 my-4" role="separator">
-                  <span className="flex-1 h-px bg-black/20" />
-                  <span className="font-inter font-semibold text-[10px] tracking-[0.12em] uppercase text-warm">{dayLabel(m.createdAt)}</span>
-                  <span className="flex-1 h-px bg-black/20" />
-                </div>
-              )}
+              {separator}
               <div className={`flex gap-2 min-w-0 ${m.mine ? 'justify-end' : 'justify-start'} ${startsCluster ? 'mt-3' : 'mt-1'}`}>
                 {!m.mine && (
                   <div className="w-8 flex-none">
@@ -370,6 +397,9 @@ export default function ChatPanel({ groupId, token, as, outsideChatLink, prompts
         className="sticky bottom-0 z-10 bg-cream mt-5 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] border-t-2 border-black"
       >
         {error && <p role="alert" className="font-inter text-xs text-[#8A3A12] mb-2">{error}</p>}
+        {status === 'ready' && messages.length === 0 && feed.length > 0 && prompts.length > 0 && !draft && composing && (
+          <div className="mb-2"><Starters prompts={prompts} onPick={(p) => { setDraft(p); input.current?.focus(); }} /></div>
+        )}
         <div className="flex items-end gap-2">
           <label className="flex-1 min-w-0">
             <span className="sr-only">Message the group</span>
@@ -380,6 +410,8 @@ export default function ChatPanel({ groupId, token, as, outsideChatLink, prompts
               maxLength={CHAT_MAX_LENGTH}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={onKeyDown}
+              onFocus={() => setComposing(true)}
+              onBlur={() => setComposing(false)}
               placeholder="Message the group"
               className="block w-full resize-none border-2 border-black bg-cream px-3 py-2.5 font-inter text-base leading-[1.35] text-black outline-none focus:bg-white min-h-[48px]"
             />
