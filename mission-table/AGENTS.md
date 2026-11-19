@@ -72,3 +72,10 @@ In Mixpanel, create a Funnel with step 1 = `kit_email_sent` and step 2 = `group_
 
 - A member's installed group app uses the group's country photo as its icon (`src/lib/appIcons.ts`, used by the group page's Apple touch icon and the per-member manifest).
 - After adding a country photo to `public/images/countries`, run `node scripts/make-country-icons.cjs` and add the slug to `COUNTRY_ICONS`.
+
+## Member app (group page with a member link)
+
+- Signed-in members (`/group/[id]?token=`) get `MemberApp.tsx`: a slim header (group name, faces → members sheet, invite-a-friend), and two tabs. Visitors without a token still get the public page.
+- **Home** (`HomeTab.tsx`): pinned "Are you in?" card, then one feed: chat messages (`ChatPanel` with `feed`) merged by time with group activity from `feed.ts` (field updates, meals sent, who's in, table photos, invitations).
+- **This month** (`MonthTab.tsx`): changes with `phase.ts` (before / day of / week after): gathering + RSVP, your plans (eat together), the meal (`MealCard.tsx`), share your table (`TableShare.tsx`), past meals.
+- Old `?tab=` links still work: field/chat → Home; month/meals/table/together → This month; members → members sheet.

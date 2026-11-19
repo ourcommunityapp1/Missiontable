@@ -12,16 +12,13 @@ import {
   getKitsForGroup,
   getAttendanceForKits,
   getFieldPostsForGroup,
-  getNextExpectedMeetingDate,
   isMeetingDatePast,
   recordGroupPageView,
 } from '@/lib/queries';
 import MemberAccessForm from './MemberAccessForm';
 import GroupPageTracker from './GroupPageTracker';
-import GroupTabs from './GroupTabs';
-import HeroInviteButton from './HeroInviteButton';
-import type { KitWithMeta } from './MealsTab';
-import type { MemberLoopData } from './loopTypes';
+import MemberApp from './MemberApp';
+import type { GroupInfo, KitWithMeta, MemberLoopData } from './loopTypes';
 import { localNow, gatheringOnOrAfter, gatheringBefore, getRsvps } from '@/lib/gathering';
 import { getTablePosts, getInvitesForMember } from '@/lib/memberApp';
 import { bestChurchLabel } from '@/lib/people';
@@ -97,7 +94,7 @@ export default async function GroupDetailPage({
     const next = gatheringOnOrAfter(rhythm, today);
     const prev = gatheringBefore(rhythm, today);
     const [rsvps, tablePosts, invites, unread] = await Promise.all([
-      next ? getRsvps(id, next) : Promise.resolve({ in: [] as string[], out: [] as string[] }),
+      next ? getRsvps(id, next) : Promise.resolve({ in: [] as string[], out: [] as string[], inTimes: [] }),
       getTablePosts(id),
       getInvitesForMember(id, currentMemberId, today),
       chatEnabled() ? getChatUnread(id, currentMemberId) : Promise.resolve(0),
@@ -111,10 +108,13 @@ export default async function GroupDetailPage({
       groupName: group.name ?? `${group.countryName} group`,
       countryName: group.countryName,
       timeLabel: group.time,
+      today,
       nextDate: next,
       tableDate: next === today ? today : prev,
       myRsvp: rsvps.in.includes(currentMemberId) ? 'in' : rsvps.out.includes(currentMemberId) ? 'out' : null,
       inMembers: members.accepted.filter((m) => rsvps.in.includes(m.id)).map((m) => ({ id: m.id, name: m.name })),
+      outCount: members.accepted.filter((m) => rsvps.out.includes(m.id)).length,
+      inTimes: rsvps.inTimes.filter((r) => members.accepted.some((m) => m.id === r.memberId)),
       tablePosts,
       received: invites.received,
       sent: invites.sent,
@@ -125,19 +125,38 @@ export default async function GroupDetailPage({
     };
   }
 
-  const nextExpectedDate = getNextExpectedMeetingDate({
-    rhythmType: group.rhythmType,
-    dayOfMonth: group.dayOfMonth,
-    weekOfMonth: group.weekOfMonth,
-    dayOfWeek: group.dayOfWeek,
-  });
-  const hasKitForNextExpected = kits.some((k) => k.meeting_date === nextExpectedDate);
-  const mostRecentKit = kits[0] ?? null;
-  const showTbdPlaceholder = !hasKitForNextExpected && (!mostRecentKit || isMeetingDatePast(mostRecentKit.meeting_date));
-  const nextExpectedDateLabel = nextExpectedDate
-    ? new Date(nextExpectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
-    : null;
+  if (loop && token) {
+    const info: GroupInfo = {
+      id: group.id,
+      name: group.name ?? `${group.countryName} group`,
+      countryName: group.countryName,
+      rhythm: group.rhythm,
+      time: group.time,
+      hostName: group.hostedBy,
+      startDate: group.startDate,
+      isVirtual: group.groupType !== 'in-person',
+      place: group.city ? `${group.city}${group.state ? `, ${group.state}` : ''}` : null,
+      chatLink: group.chat_link,
+      chatEnabled: chatEnabled(),
+    };
+    return (
+      <main className="min-h-screen flex flex-col bg-cream">
+        <GroupPageTracker
+          groupId={id}
+          countrySlug={group.countrySlug}
+          countryName={group.countryName}
+          groupType={group.groupType}
+          groupName={group.name}
+          memberCount={group.memberCount}
+          isMember
+          memberToken={token}
+        />
+        <MemberApp token={token} info={info} loop={loop} kits={kitsWithMeta} fieldPosts={fieldPosts} chatUnread={chatUnread} />
+      </main>
+    );
+  }
 
+  // Visitors without a member link: the public group page.
   const isInPerson = group.groupType === 'in-person';
   const spotsRemaining =
     group.maxSize != null ? group.maxSize - group.memberCount : null;
@@ -145,8 +164,6 @@ export default async function GroupDetailPage({
     ? 'Open to members who are willing to meet monthly with other families at this location.'
     : 'Open to members everywhere. All members meet and pray at the same time in their own home.';
   const countryImage = countries.find((c) => c.slug === group.countrySlug)?.image;
-  const shownMembers = members.accepted.slice(0, 5);
-  const extraMemberCount = members.accepted.length - shownMembers.length;
 
   const detailsGrid = (
     <div className="border-2 border-black p-5 mb-6">
@@ -208,7 +225,7 @@ export default async function GroupDetailPage({
         groupType={group.groupType}
         groupName={group.name}
         memberCount={group.memberCount}
-        isMember={isMember}
+        isMember={false}
         memberToken={token}
       />
 
@@ -234,7 +251,6 @@ export default async function GroupDetailPage({
           <span className="absolute top-3 left-3 bg-cream border border-black px-2.5 py-1 font-inter text-[10px] font-semibold tracking-[0.1em] uppercase">
             {isInPerson ? 'In-Person Group' : 'Virtual Group'} · {group.countryName}
           </span>
-          {isMember && <HeroInviteButton groupId={group.id} />}
           <div className="absolute left-0 right-0 bottom-0 p-5 md:p-7 flex flex-col gap-2">
             <h1 className="font-fraunces font-bold text-[36px] md:text-[56px] uppercase leading-none tracking-[-0.04em] fraunces-64 text-cream">
               {group.name ?? group.hostedBy}
@@ -244,51 +260,10 @@ export default async function GroupDetailPage({
                 Hosted By {group.hostedBy}
                 {isInPerson && group.city && ` · ${group.city}${group.state ? `, ${group.state}` : ''}`}
               </p>
-              {isMember && shownMembers.length > 0 && (
-                <div className="flex items-center" aria-label={`${members.accepted.length} members`}>
-                  {shownMembers.map((m, i) => (
-                    <div
-                      key={m.id}
-                      style={{ marginLeft: i === 0 ? 0 : -10 }}
-                      className="w-8 h-8 rounded-full border-2 border-cream bg-cream-dark flex items-center justify-center font-fraunces text-[11px] text-black"
-                    >
-                      {m.name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')}
-                    </div>
-                  ))}
-                  {extraMemberCount > 0 && (
-                    <div style={{ marginLeft: -10 }} className="w-8 h-8 rounded-full border-2 border-cream bg-cream/90 flex items-center justify-center font-inter text-[10px] font-semibold text-black">
-                      +{extraMemberCount}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </div>
 
-        {isMember && currentMemberId && token ? (
-          <GroupTabs
-            token={token}
-            currentMemberId={currentMemberId}
-            kits={kitsWithMeta}
-            showTbdPlaceholder={showTbdPlaceholder}
-            nextExpectedDateLabel={nextExpectedDateLabel}
-            meetingTimeLabel={group.time}
-            countryName={group.countryName}
-            fieldPosts={fieldPosts}
-            members={members.accepted}
-            chatLink={group.chat_link}
-            loop={loop!}
-            chatUnread={chatUnread}
-            chatEnabled={chatEnabled()}
-            infoSlot={
-              <div className="max-w-[640px] mb-8">
-                <p className="font-inter text-base text-warm mb-8">{description}</p>
-                {detailsGrid}
-              </div>
-            }
-          />
-        ) : (
           <div className="max-w-[640px]">
             {/* Description */}
             <p className="font-inter text-base text-warm mb-8">{description}</p>
@@ -305,7 +280,6 @@ export default async function GroupDetailPage({
 
             <MemberAccessForm groupId={group.id} />
           </div>
-        )}
       </div>
 
       <Footer />

@@ -106,15 +106,17 @@ export async function getHostNote(groupId: string, date: string, kind: HostNoteK
 
 // ─── RSVPs ────────────────────────────────────────────────────────────────────
 
-export async function getRsvps(groupId: string, date: string): Promise<{ in: string[]; out: string[] }> {
+export async function getRsvps(groupId: string, date: string): Promise<{ in: string[]; out: string[]; inTimes: { memberId: string; at: string }[] }> {
   const { data } = await supabase
     .from('gathering_rsvps')
-    .select('member_id, status')
+    .select('member_id, status, responded_at')
     .eq('group_id', groupId)
-    .eq('meeting_date', date) as unknown as { data: { member_id: string; status: 'in' | 'out' }[] | null };
+    .eq('meeting_date', date) as unknown as { data: { member_id: string; status: 'in' | 'out'; responded_at: string }[] | null };
+  const rows = data ?? [];
   return {
-    in: (data ?? []).filter((r) => r.status === 'in').map((r) => r.member_id),
-    out: (data ?? []).filter((r) => r.status === 'out').map((r) => r.member_id),
+    in: rows.filter((r) => r.status === 'in').map((r) => r.member_id),
+    out: rows.filter((r) => r.status === 'out').map((r) => r.member_id),
+    inTimes: rows.filter((r) => r.status === 'in').map((r) => ({ memberId: r.member_id, at: r.responded_at })),
   };
 }
 
@@ -457,7 +459,7 @@ export async function getHostLoopState(
   const dates = [next, thanksDate].filter((d): d is string => !!d);
 
   const [rsvps, notesRes, sendsRes] = await Promise.all([
-    next ? getRsvps(group.id, next) : Promise.resolve({ in: [] as string[], out: [] as string[] }),
+    next ? getRsvps(group.id, next) : Promise.resolve({ in: [] as string[], out: [] as string[], inTimes: [] }),
     dates.length
       ? supabase.from('host_notes').select('*').eq('group_id', group.id).in('meeting_date', dates)
       : Promise.resolve({ data: [] }),
