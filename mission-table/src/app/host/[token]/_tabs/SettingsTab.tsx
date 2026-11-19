@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 import { updateChatLink, setAutoMessages } from '../actions';
 import { type DashboardData, SectionLabel, formatDay, btnSecondary } from './shared';
+import AppEmailSection from './AppEmailSection';
 
-export default function SettingsTab({ token, group, cohosts }: DashboardData) {
+export default function SettingsTab({ token, group, cohosts, app }: DashboardData) {
   const details: { k: string; v: string }[] = [
     { k: 'Group name', v: group.name ?? '—' },
     { k: 'Country', v: group.countryName },
@@ -29,6 +30,11 @@ export default function SettingsTab({ token, group, cohosts }: DashboardData) {
             </div>
           ))}
         </dl>
+      </section>
+
+      <section id="app" className="flex flex-col gap-3 scroll-mt-6">
+        <SectionLabel>The group app</SectionLabel>
+        <AppEmailSection token={token} groupId={group.id} stats={app} />
       </section>
 
       <section className="flex flex-col gap-3">

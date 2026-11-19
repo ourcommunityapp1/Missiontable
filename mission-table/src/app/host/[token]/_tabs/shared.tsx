@@ -1,6 +1,7 @@
 import type { HostGroup, GroupMembers, FieldPostWithEngagement, GroupActivity, GroupHost } from '@/lib/queries';
 import type { KitRow } from '@/lib/database.types';
 import type { HostLoopState } from '@/lib/gathering';
+import type { AppStats } from '@/lib/appEmail';
 
 export type TabId = 'overview' | 'chat' | 'field' | 'meals' | 'people' | 'insights' | 'settings';
 
@@ -27,6 +28,8 @@ export type DashboardData = {
   loop: HostLoopState;
   /** "We gathered" marks per kit id. */
   gatheredByKit: Record<string, number>;
+  /** Who has the group app on their phone. */
+  app: AppStats;
   /** Builds a link to another tab of the same group. */
   tabHref: (tab: TabId) => string;
 };

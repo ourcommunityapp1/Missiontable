@@ -23,11 +23,11 @@ import { localNow, gatheringOnOrAfter, gatheringBefore, getRsvps } from '@/lib/g
 import { getTablePosts, getInvitesForMember } from '@/lib/memberApp';
 import { bestChurchLabel } from '@/lib/people';
 import { getChatUnread, chatEnabled } from '@/lib/chat';
-import { appIconsFor } from '@/lib/appIcons';
+import { appIconsFor, homeScreenName } from '@/lib/appIcons';
 
 export const dynamic = 'force-dynamic';
 
-type SearchParams = { token?: string; tab?: string; rsvp?: string; date?: string };
+type SearchParams = { token?: string; tab?: string; rsvp?: string; date?: string; install?: string };
 
 export async function generateMetadata({
   params,
@@ -46,7 +46,7 @@ export async function generateMetadata({
   return {
     title: `${title} — Mission Table`,
     manifest: `/group/${id}/manifest.webmanifest?token=${token}`,
-    appleWebApp: { capable: true, title: title.length > 18 ? title.split(' ').slice(0, 2).join(' ') : title, statusBarStyle: 'default' },
+    appleWebApp: { capable: true, title: homeScreenName(title), statusBarStyle: 'default' },
     // The home-screen icon is the group's country photo.
     icons: { apple: appIconsFor(group.countrySlug).apple },
   };
@@ -60,7 +60,7 @@ export default async function GroupDetailPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { id } = await params;
-  const { token, tab, rsvp, date } = await searchParams;
+  const { token, tab, rsvp, date, install } = await searchParams;
 
   const group = await getGroupById(id);
   if (!group) notFound();
@@ -138,6 +138,8 @@ export default async function GroupDetailPage({
       place: group.city ? `${group.city}${group.state ? `, ${group.state}` : ''}` : null,
       chatLink: group.chat_link,
       chatEnabled: chatEnabled(),
+      iconUrl: appIconsFor(group.countrySlug).apple,
+      shortName: homeScreenName(group.name ?? `${group.countryName} group`),
     };
     return (
       <main className="min-h-screen flex flex-col bg-cream">
@@ -151,7 +153,7 @@ export default async function GroupDetailPage({
           isMember
           memberToken={token}
         />
-        <MemberApp token={token} info={info} loop={loop} kits={kitsWithMeta} fieldPosts={fieldPosts} chatUnread={chatUnread} />
+        <MemberApp token={token} info={info} loop={loop} kits={kitsWithMeta} fieldPosts={fieldPosts} chatUnread={chatUnread} installRequested={install === '1'} />
       </main>
     );
   }

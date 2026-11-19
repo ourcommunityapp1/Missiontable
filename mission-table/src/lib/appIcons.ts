@@ -15,3 +15,8 @@ export function appIconsFor(countrySlug: string | null | undefined): AppIcons {
   }
   return { apple: '/icons/apple-touch-icon.png', icon192: '/icons/icon-192.png', icon512: '/icons/icon-512.png', type: 'image/png' };
 }
+
+/** The label under the icon on a home screen (iOS shows about 12–14 characters). */
+export function homeScreenName(title: string): string {
+  return title.length > 18 ? title.split(' ').slice(0, 2).join(' ') : title;
+}
