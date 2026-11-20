@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Start Honest Mockup</title>
+<!-- Discovery mockup, cycle 2026-11-20. Static prototype for a fake-door / 5-second test. Not production. Sample data only. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..800,0..100,0..1&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --cream:#FBF9F4; --cream-dark:#F5F3EE; --black:#000; --warm:#625E53; --body:#3A372F; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#E9E6DF; font-family:Inter, system-ui, sans-serif; color:var(--black); }
+  .wrap { max-width:1280px; margin:0 auto; padding:32px 16px 64px; }
+  .intro { max-width:760px; margin-bottom:28px; }
+  .intro h1 { font-family:Fraunces, serif; font-variation-settings:"opsz" 48, "wght" 700, "SOFT" 0, "WONK" 1; font-size:40px; line-height:1; text-transform:uppercase; letter-spacing:-0.02em; margin:0 0 12px; }
+  .intro p { color:var(--warm); line-height:1.6; margin:0 0 8px; }
+  .frames { display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; }
+  .col { width:390px; max-width:100%; }
+  .cap { font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin:0 0 8px; }
+  .task { font-size:13px; color:var(--body); line-height:1.5; margin:10px 2px 0; }
+  .phone { background:var(--cream); border:2px solid var(--black); min-height:760px; }
+  .nav { padding:14px 16px; border-bottom:2px solid var(--black); font-family:Fraunces, serif; font-variation-settings:"opsz" 32, "wght" 700, "SOFT" 0, "WONK" 1; font-size:22px; letter-spacing:-0.06em; }
+  .pad { padding:20px 16px; display:flex; flex-direction:column; gap:18px; }
+  .eyebrow { font-size:11px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--warm); margin:0; }
+  .disp { font-family:Fraunces, serif; font-variation-settings:"opsz" 32, "wght" 700, "SOFT" 0, "WONK" 1; font-size:40px; line-height:.98; text-transform:uppercase; letter-spacing:-0.03em; margin:0; }
+  .body { font-size:15px; line-height:1.55; color:var(--body); margin:0; }
+  ol.steps { list-style:none; margin:0; padding:0; border:2px solid var(--black); }
+  ol.steps li { display:flex; gap:12px; padding:14px; border-top:2px solid var(--black); }
+  ol.steps li:first-child { border-top:0; }
+  ol.steps .n { flex:none; width:32px; height:32px; border:2px solid var(--black); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
+  ol.steps .n.on { background:var(--black); color:var(--cream); }
+  ol.steps b { display:block; font-size:15px; }
+  ol.steps span.d { font-size:13px; color:var(--warm); line-height:1.45; }
+  label { display:block; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px; }
+  input, select { width:100%; min-height:48px; border:2px solid var(--black); background:#fff; font:15px Inter; padding:0 12px; }
+  .btn { display:flex; align-items:center; justify-content:center; min-height:52px; width:100%; border:2px solid var(--black); background:var(--black); color:var(--cream); font:600 14px Inter; letter-spacing:.05em; text-transform:uppercase; cursor:pointer; }
+  .btn.light { background:var(--cream); color:var(--black); }
+  .note { font-size:12px; color:var(--warm); line-height:1.5; margin:0; }
+  .box { border:2px solid var(--black); padding:14px; display:flex; flex-direction:column; gap:8px; }
+  .box.dash { border-style:dashed; background:var(--cream-dark); }
+  .line { display:flex; justify-content:space-between; gap:12px; font-size:14px; padding:10px 0; border-top:2px solid var(--black); }
+  .line:first-of-type { border-top:0; }
+  @media (prefers-color-scheme: dark) { body { background:#1C1B1B; } .intro h1, .intro p, .cap, .task { color:#FBF9F4; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="intro">
+    <h1>Start a group, honestly</h1>
+    <p><b>Opportunity 2 (discovery mockup, cycle 2026-11-20).</b> 49 people opened Start a Group in six months and none finished. Today the page asks for 16 answers over about 4.5 phone screens, including time zone and start date. It also says the group “will appear on that country’s page immediately”, while the success screen says an admin will review it. The one real host has waited about five months. This version asks for four things, says plainly what happens next and by when, and shows a waiting group as “forming” rather than “No groups yet”.</p>
+    <p>The response time below is a placeholder. Only promise a time Landon can keep.</p>
+  </div>
+  <div class="frames">
+    <div class="col">
+      <p class="cap">A · /start?country=kosovo</p>
+      <div class="phone">
+        <div class="nav">MISSION TABLE</div>
+        <div class="pad">
+          <p class="eyebrow">Start a group for Kosovo</p>
+          <p class="disp">Gather a table for Kosovo.</p>
+          <p class="body">One meal a month, one country, for a year. You don’t need a plan yet. Tell us who you are and we’ll set it up with you.</p>
+          <ol class="steps">
+            <li><span class="n on">1</span><span><b>Say hello</b><span class="d">Four questions, about a minute.</span></span></li>
+            <li><span class="n">2</span><span><b>A 15-minute call with Landon</b><span class="d">Within 3 days. What hosting asks, what we believe, and whether you know anyone in Kosovo (we’ll help if not).</span></span></li>
+            <li><span class="n">3</span><span><b>Your group goes live</b><span class="d">You pick the night together. Your first meal is drafted for you.</span></span></li>
+          </ol>
+          <div><label for="n">Your name</label><input id="n" placeholder="First name is fine"></div>
+          <div><label for="e">Email</label><input id="e" type="email" placeholder="you@example.com"></div>
+          <div><label for="c">Country you’ll pray for</label><select id="c"><option>Kosovo</option></select></div>
+          <div><label for="w">Who will gather?</label><select id="w"><option>Family and friends, each at home</option><option>One table, one place</option><option>A church small group</option></select></div>
+          <button class="btn" type="button">Send, and book a call →</button>
+          <p class="note">Nothing is public until you and Landon say so.</p>
+        </div>
+      </div>
+      <p class="task"><b>Fake door:</b> add only the button “Talk to Landon first (15 min)” above today’s form; it opens a calendar link or email. Pass: 5 or more of the next 40 visitors to /start tap it.</p>
+    </div>
+    <div class="col">
+      <p class="cap">B · After sending, and on the country page</p>
+      <div class="phone">
+        <div class="nav">MISSION TABLE</div>
+        <div class="pad">
+          <p class="eyebrow">Request sent · Fri, Nov 20</p>
+          <p class="disp">You’re next in line.</p>
+          <p class="body">Landon will email you by <b>Mon, Nov 23</b> to find a time to talk. If you don’t hear from him, reply to the email we just sent and it comes straight to him.</p>
+          <div class="box">
+            <p class="eyebrow">Where things stand</p>
+            <div class="line"><span>Request received</span><b>Nov 20</b></div>
+            <div class="line"><span>Call with Landon</span><b>by Nov 23</b></div>
+            <div class="line"><span>Group live on the Kosovo page</span><b>after the call</b></div>
+          </div>
+          <p class="eyebrow" style="margin-top:6px">On the Kosovo country page</p>
+          <div class="box dash">
+            <p style="font-family:Fraunces,serif;font-variation-settings:'opsz' 32,'wght' 700,'SOFT' 0,'WONK' 1;font-size:22px;margin:0">1 group forming</p>
+            <p class="body">A host is starting a table for Kosovo. Want to pray with them when it opens?</p>
+            <button class="btn light" type="button">Tell me when it opens</button>
+          </div>
+        </div>
+      </div>
+      <p class="task"><b>5-second test:</b> show frame B for 5 s, then hide it. Ask “What happens next, and when?” Pass: 4 of 5 people say “a call or email from Landon within a few days”.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>
