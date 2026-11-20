@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meal Ready Mockup</title>
+<!-- Discovery mockup, cycle 2026-11-20. Static prototype for a first-click test. Not production. Sample data only. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..800,0..100,0..1&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --cream:#FBF9F4; --cream-dark:#F5F3EE; --black:#000; --warm:#625E53; --body:#3A372F; --accent:#390C00; --spain:#AA151B; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#E9E6DF; color:var(--black); font-family:Inter, system-ui, sans-serif; }
+  .wrap { max-width:1280px; margin:0 auto; padding:32px 16px 64px; }
+  .intro { max-width:760px; margin:0 0 28px; }
+  .intro h1 { font-family:Fraunces, serif; font-variation-settings:"opsz" 48, "wght" 700, "SOFT" 0, "WONK" 1; font-size:40px; line-height:1; text-transform:uppercase; letter-spacing:-0.02em; margin:0 0 12px; }
+  .intro p { color:var(--warm); line-height:1.6; margin:0 0 8px; }
+  .frames { display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; }
+  .col { width:390px; max-width:100%; }
+  .cap { font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin:0 0 8px; }
+  .task { font-size:13px; color:var(--body); line-height:1.5; margin:10px 2px 0; }
+  .phone { background:var(--cream); border:2px solid var(--black); min-height:780px; overflow:hidden; }
+  .top { padding:14px 16px 12px; border-bottom:2px solid var(--black); }
+  .eyebrow { font-size:11px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--warm); margin:0; }
+  .gname { font-family:Fraunces, serif; font-variation-settings:"opsz" 32, "wght" 700, "SOFT" 0, "WONK" 1; font-size:26px; line-height:1.05; margin:4px 0 0; }
+  .tabs { display:flex; gap:0; border-bottom:2px solid var(--black); }
+  .tabs span { flex:1; text-align:center; padding:13px 0; font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--warm); }
+  .tabs span.on { color:var(--black); box-shadow: inset 0 -4px 0 var(--black); }
+  .pad { padding:16px; display:flex; flex-direction:column; gap:16px; }
+  h2.disp { font-family:Fraunces, serif; font-variation-settings:"opsz" 32, "wght" 700, "SOFT" 0, "WONK" 1; font-size:30px; line-height:1.05; margin:0; }
+  h3 { font-family:Fraunces, serif; font-variation-settings:"opsz" 32, "wght" 700, "SOFT" 0, "WONK" 1; font-size:22px; line-height:1.1; margin:0; }
+  p { margin:0; }
+  .body { font-size:15px; line-height:1.55; color:var(--body); }
+  .card { border:2px solid var(--black); background:var(--cream); }
+  .card.dark { background:var(--black); color:var(--cream); }
+  .card .in { padding:14px; display:flex; flex-direction:column; gap:10px; }
+  .row { display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border-top:2px solid var(--black); }
+  .row:first-child { border-top:0; }
+  .row .k { width:84px; flex:none; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; padding-top:3px; }
+  .row .v { flex:1; font-size:15px; line-height:1.45; }
+  .row .v small { display:block; color:var(--warm); font-size:13px; margin-top:2px; }
+  .swap { flex:none; min-height:44px; min-width:64px; border:2px solid var(--black); background:var(--cream); font:600 12px Inter; letter-spacing:.06em; text-transform:uppercase; }
+  .btn { display:flex; align-items:center; justify-content:center; min-height:52px; width:100%; border:2px solid var(--black); font:600 14px Inter; letter-spacing:.05em; text-transform:uppercase; background:var(--black); color:var(--cream); text-decoration:none; cursor:pointer; }
+  .btn.light { background:var(--cream); color:var(--black); }
+  .btn.onDark { background:var(--cream); color:var(--black); border-color:var(--cream); }
+  .link { min-height:44px; display:flex; align-items:center; justify-content:center; font:600 13px Inter; letter-spacing:.05em; text-transform:uppercase; text-decoration:underline; text-underline-offset:4px; color:inherit; background:none; border:0; width:100%; cursor:pointer; }
+  .stripe { height:8px; background:linear-gradient(var(--spain) 0 25%, #F1BF00 25% 75%, var(--spain) 75%); border-bottom:2px solid var(--black); }
+  textarea { width:100%; min-height:88px; border:2px solid var(--black); background:#fff; font:15px/1.5 Inter; padding:10px 12px; color:var(--black); resize:vertical; }
+  label.lbl { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+  .meta { font-size:13px; color:var(--warm); }
+  .hist { display:flex; flex-direction:column; }
+  .hist .m { display:flex; justify-content:space-between; align-items:center; min-height:56px; border-top:2px solid var(--black); padding:8px 0; }
+  .hist .m:last-child { border-bottom:2px solid var(--black); }
+  .hist .m b { font-family:Fraunces, serif; font-variation-settings:"opsz" 32, "wght" 700, "SOFT" 0, "WONK" 1; font-size:18px; font-weight:700; }
+  .hist .m .when { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--warm); }
+  .rest { font-size:14px; line-height:1.5; color:var(--body); padding:12px 14px; border:2px dashed var(--black); }
+  .tablecount { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .tablecount i { width:22px; height:22px; border:2px solid var(--black); display:block; }
+  .tablecount i.f { background:var(--black); }
+  .note { font-size:12px; color:var(--warm); line-height:1.5; }
+  @media (prefers-color-scheme: dark) { body { background:#1C1B1B; } .intro h1, .intro p, .cap, .task { color:#FBF9F4; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="intro">
+    <h1>December’s meal, ready to send</h1>
+    <p><b>Opportunity 1 (discovery mockup, cycle 2026-11-20).</b> The monthly rhythm stopped when the host stopped sending meals. Today that job starts from a blank 9-field “New kit” form, every month. In this version Mission Table drafts the meal ten days ahead: a dish from the country, a short passage, and prayer requests (from the field update if there is one, otherwise from the country’s prayer points). The host reads it, adds a line, and sends. A missed month is a rest, not a debt.</p>
+    <p>All content here is sample data for a test. It is not production copy, and none of it is from a real member.</p>
+  </div>
+
+  <div class="frames">
+    <!-- FRAME A: Overview -->
+    <div class="col">
+      <p class="cap">A · Host dashboard, Overview</p>
+      <div class="phone" aria-label="Frame A: host overview">
+        <div class="stripe"></div>
+        <div class="top">
+          <p class="eyebrow">Spain · Every 2nd Saturday</p>
+          <p class="gname">Saturday Spain Supper</p>
+        </div>
+        <div class="tabs"><span class="on">Overview</span><span>Chat</span><span>Meals</span><span>More</span></div>
+        <div class="pad">
+          <p class="eyebrow">Sat, Dec 12 · 22 days away</p>
+          <h2 class="disp">December’s meal is ready for you.</h2>
+          <div class="card">
+            <div class="row"><span class="k">Cook</span><span class="v">Lentejas estofadas<small>Spanish lentil stew · about 1 hour</small></span></div>
+            <div class="row"><span class="k">Read</span><span class="v">Psalm 67:1–3<small>“that your way may be known on earth”</small></span></div>
+            <div class="row"><span class="k">Pray</span><span class="v">3 requests for Spain<small>from the country’s prayer points</small></span></div>
+          </div>
+          <a class="btn" href="#frameB">Read it and send →</a>
+          <p class="note">We drafted this so you don’t start from a blank page. Change anything. It goes to 22 members only when you press send.</p>
+          <button class="link" type="button">Ask my co-host to send it</button>
+          <div class="card" style="background:var(--cream-dark)">
+            <div class="in">
+              <p class="eyebrow">Who’s in for Dec 12</p>
+              <p class="body"><b>1 in</b> so far. Your “Are you in?” note goes out Dec 9 with the meal.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="task"><b>First-click task:</b> “It’s Sunday night and December’s gathering is coming. Show me what you’d tap to get the meal to your group.” Pass: the big black button in ≤ 5 s.</p>
+    </div>
+
+    <!-- FRAME B: Review and send -->
+    <div class="col" id="frameB">
+      <p class="cap">B · Read it and send</p>
+      <div class="phone" aria-label="Frame B: review the drafted meal">
+        <div class="stripe"></div>
+        <div class="top">
+          <p class="eyebrow">December · for Sat, Dec 12</p>
+          <p class="gname">Read it, make it yours</p>
+        </div>
+        <div class="pad">
+          <div class="card">
+            <div class="row"><span class="k">Cook</span><span class="v">Lentejas estofadas<small>Recipe link · serves 6</small></span><button class="swap" type="button">Swap</button></div>
+            <div class="row"><span class="k">Read</span><span class="v">Psalm 67:1–3<small>Full text included in the email</small></span><button class="swap" type="button">Swap</button></div>
+            <div class="row"><span class="k">Pray</span><span class="v">For young adults leaving the church in Spain’s cities. For the 12 least-reached peoples. For workers serving migrants in the south.<small>Edit, or add one from your field partner</small></span><button class="swap" type="button">Edit</button></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label class="lbl" for="hostline">A line from you (optional)</label>
+            <textarea id="hostline" placeholder="We tried this one last winter and it fed everyone. Bring a friend if you can."></textarea>
+          </div>
+          <button class="btn" type="button">Send to 22 members</button>
+          <button class="btn light" type="button">Save and send later</button>
+          <button class="link" type="button">We’re resting in December</button>
+          <p class="note">Resting tells members there’s no meal this month and keeps the Dec 12 date for anyone who wants to pray at their own table.</p>
+        </div>
+      </div>
+      <p class="task"><b>Hallway question:</b> “What would you change before sending this?” Pass: host can say what goes out and to whom, and estimates under 5 minutes.</p>
+    </div>
+
+    <!-- FRAME C: Meals history -->
+    <div class="col">
+      <p class="cap">C · Meals tab, without the empty months</p>
+      <div class="phone" aria-label="Frame C: meals history">
+        <div class="stripe"></div>
+        <div class="top">
+          <p class="eyebrow">Saturday Spain Supper</p>
+          <p class="gname">Your tables so far</p>
+        </div>
+        <div class="tabs"><span>Overview</span><span>Chat</span><span class="on">Meals</span><span>More</span></div>
+        <div class="pad">
+          <div class="card dark">
+            <div class="in">
+              <p class="eyebrow" style="color:#CFCBC2">Next · Sat, Dec 12</p>
+              <h3>December’s meal is drafted.</h3>
+              <a class="btn onDark" href="#frameB">Read it and send →</a>
+            </div>
+          </div>
+          <div>
+            <p class="eyebrow">4 meals shared since June</p>
+            <div class="tablecount" aria-label="4 meals shared"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i></div>
+          </div>
+          <div class="hist">
+            <div class="m"><span><span class="when">September</span><br><b>Sample dish four</b></span><span class="meta">Open</span></div>
+            <div class="m"><span><span class="when">August</span><br><b>Sample dish three</b></span><span class="meta">Open</span></div>
+            <div class="m"><span><span class="when">July</span><br><b>Sample dish two</b></span><span class="meta">Open</span></div>
+            <div class="m"><span><span class="when">June</span><br><b>Sample dish one</b></span><span class="meta">Open</span></div>
+          </div>
+          <p class="rest">October and November rested. December picks up right where you are.</p>
+        </div>
+      </div>
+      <p class="task"><b>Desirability check:</b> show the current Meals tab (10 dashed “No meal sent” boxes) and this one. Ask “Which would you rather open on a busy week, and why?”</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>
