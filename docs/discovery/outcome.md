@@ -18,5 +18,11 @@ Why this one: Mission Table exists so believers eat and pray for the nations tog
 | Hosts keep the rhythm | Meals sent on time, automatic emails on (Q6, Q11) |
 | More tables | Groups started, join requests answered quickly (Q2, Q12) |
 
-## Baseline
-Filled in by the first cycle's evidence.
+## Baseline (2026-11-20)
+- **Sep 12 gathering: 1 of 22 members (4.5%)** showed a sign of gathering. **Oct 10 and Nov 14: 0** (no meal was sent).
+- One live group (Spain), 22 members across 8 cities in 4 states; one host waiting since June.
+
+## Measurement fixes agreed in cycle 1
+- A gathering with **no meal sent counts as 0**, not as missing.
+- Guard metric: **meal sent ≥ 5 days before the gathering** (last four: 10, 4, 2, 1 days, then none).
+- Add a **host-reported headcount** the day after each gathering ("about how many households gathered?"). Members of a spread-out, virtual group may gather without touching the app, so app signals alone can undercount several-fold.
