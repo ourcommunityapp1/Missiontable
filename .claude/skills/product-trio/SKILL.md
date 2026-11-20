@@ -41,7 +41,7 @@ Run every query in `docs/discovery/queries.sql`; add Mixpanel questions the outc
 ## 2. Three lenses, in parallel
 Launch the three agents at once with the Agent tool (`subagent_type` = the agent name), each told the cycle folder and to read `evidence.md`:
 - **trio-product** → `cycles/<date>/product.md`: outcome check, new or changed opportunities with evidence, experiment verdicts, ranked candidate bets, research Landon can run.
-- **trio-design** → `cycles/<date>/design.md` + screenshots: journey walkthroughs, friction log (severity 1–4), desirability gaps, usability risks and cheapest usability tests for the top bets, mockups.
+- **trio-design** → `cycles/<date>/design.md` + screenshots (at most 12 per cycle, phone viewport not full-page, `deviceScaleFactor: 1`, only the ones the notes cite; keep others in the scratchpad): journey walkthroughs, friction log (severity 1–4), desirability gaps, usability risks and cheapest usability tests for the top bets, mockups.
 - **trio-engineering** → `cycles/<date>/engineering.md`: health and risk findings, instrumentation gaps, feasibility and cost of top bets, safe experiment designs with thresholds, kill switches and rollback.
 
 ## 3. Converge (orchestrator, as the trio together)
