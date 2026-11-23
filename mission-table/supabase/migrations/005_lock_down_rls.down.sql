@@ -15,6 +15,7 @@ create policy "Anyone can delete a group chat message" on group_chat_messages fo
 create policy "server access" on chat_messages for all using (true) with check (true);
 create policy "server access" on chat_reads for all using (true) with check (true);
 create policy "server access" on member_app_opens for all using (true) with check (true);
+create policy "server access" on admins for all using (true) with check (true);
 create policy "Group cohosts are publicly readable" on group_cohosts for select using (true);
 create policy "Groups are publicly readable" on groups for select using (status <> 'inactive'::group_status);
 create policy "Anyone can create a group" on groups for insert with check (true);

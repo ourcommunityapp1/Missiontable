@@ -251,7 +251,9 @@ export async function getGroupById(id: string): Promise<GroupDetail | null> {
       )
     `)
     .eq('id', id)
-    .eq('status', 'active')
+    // Local discovery runs (the product trio) may preview the hidden QA group,
+    // which is kept 'pending' (readable, never listed). Never set PREVIEW_PENDING_GROUPS in Netlify.
+    .in('status', process.env.PREVIEW_PENDING_GROUPS === '1' ? ['active', 'pending'] : ['active'])
     .single() as unknown as { data: RawGroupDetailRow | null; error: unknown };
 
   if (error || !data) return null;

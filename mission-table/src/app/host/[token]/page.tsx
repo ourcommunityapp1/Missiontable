@@ -57,7 +57,7 @@ export default async function HostDashboardPage({
         <div className="max-w-[1120px] mx-auto w-full px-6 md:px-8 py-12 pb-24 flex-1">
           <p className="font-inter font-semibold text-xs tracking-[0.12em] uppercase text-warm mb-2">Host dashboard</p>
           <h1 className="font-fraunces font-bold text-[40px] md:text-[48px] leading-none tracking-[-0.035em] text-black mb-4">Welcome, {host.name.split(/\s+/)[0]}.</h1>
-          <p className="font-inter text-base text-warm max-w-[600px]">Your group is pending review. You&apos;ll receive an email once it&apos;s approved.</p>
+          <p className="font-inter text-base text-warm max-w-[600px]">Your group is waiting for review. A Mission Table admin usually reviews new groups within 2 days, and we&apos;ll email you when it&apos;s live.</p>
         </div>
         <Footer />
       </main>
@@ -153,6 +153,15 @@ export default async function HostDashboardPage({
             </p>
           )}
         </div>
+
+        {group.status === 'pending' && (
+          <div role="status" className="border-2 border-black bg-[#F7E9E1] px-4 py-3.5 mb-6 flex flex-col gap-1">
+            <p className="font-inter font-bold text-[11px] tracking-[0.12em] uppercase text-[#8A3A12]">Waiting for review</p>
+            <p className="font-inter text-sm text-black">
+              A Mission Table admin reviews every new group, usually within 2 days. Your group isn&apos;t listed yet, so people can&apos;t find it or join. We&apos;ll email you the moment it&apos;s live. You can set up your first meal in the meantime. Questions? <a href="mailto:projectmissiontable@gmail.com" className="underline font-semibold">projectmissiontable@gmail.com</a>
+            </p>
+          </div>
+        )}
 
         <nav id="dashboard-tabs" aria-label="Dashboard sections" className="overflow-x-auto overflow-y-hidden overscroll-x-contain no-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
           <ul className="flex gap-1.5 w-max min-w-full md:w-auto md:flex-wrap border-b-2 border-black">

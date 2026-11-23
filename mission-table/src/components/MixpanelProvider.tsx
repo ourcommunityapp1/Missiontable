@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { initMixpanel, track } from '@/lib/mixpanel';
+import { initMixpanel, track, safePath } from '@/lib/mixpanel';
 
 function getPageProps(pathname: string): Record<string, string> {
   if (pathname === '/') return { page_type: 'home' };
@@ -27,6 +27,7 @@ function getPageProps(pathname: string): Record<string, string> {
   if (/^\/host\/[^/]+\/group\/[^/]+\/edit$/.test(pathname)) return { page_type: 'host_group_edit' };
   if (/^\/host\/[^/]+\/field-post\/new$/.test(pathname)) return { page_type: 'host_field_post_new' };
   if (/^\/host\/[^/]+$/.test(pathname)) return { page_type: 'host_dashboard' };
+  if (/^\/admin\/[^/]+$/.test(pathname)) return { page_type: 'admin_dashboard' };
 
   return { page_type: 'other' };
 }
@@ -39,7 +40,7 @@ export default function MixpanelProvider() {
   }, []);
 
   useEffect(() => {
-    track('Page View', { path: pathname, ...getPageProps(pathname) });
+    track('Page View', { path: safePath(pathname), ...getPageProps(pathname) });
   }, [pathname]);
 
   return null;

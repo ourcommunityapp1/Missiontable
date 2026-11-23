@@ -1,7 +1,8 @@
 const token = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN ?? 'b1a62bc7bfb11d336a7fe640b2637320';
 
 export async function trackServer(event: string, distinctId: string, props?: Record<string, unknown>) {
-  if (!token) return;
+  // Local test runs and Netlify preview deploys don't write to the production project.
+  if (!token || process.env.DISABLE_VIEW_TRACKING === '1' || (process.env.CONTEXT && process.env.CONTEXT !== 'production')) return;
   try {
     await fetch('https://api.mixpanel.com/track?ip=0', {
       method: 'POST',

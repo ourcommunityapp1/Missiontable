@@ -3,6 +3,8 @@
 import { supabase } from '@/lib/supabase';
 import { esc } from '@/lib/escapeHtml';
 import { Resend } from 'resend';
+import { notifyAdmins } from '@/lib/admin';
+import { countries } from '@/data/countries';
 
 export type StartGroupResult =
   | { success: true; countrySlug: string }
@@ -84,8 +86,8 @@ export async function startGroup(formData: FormData): Promise<StartGroupResult> 
       subject: 'Your Mission Table group has been submitted',
       html: `
         <p>Hi ${esc(name)},</p>
-        <p>Thank you for submitting your Mission Table group! We'll review it and approve it shortly.</p>
-        <p>Once approved, your group will be listed publicly and people can request to join.</p>
+        <p>Thank you for submitting your Mission Table group! A Mission Table admin reviews every new group, usually within 2 days, and we'll email you as soon as it's live.</p>
+        <p>Once it's live, your group is listed on its country page and people can ask to join.</p>
         <p><strong>Bookmark your host dashboard link:</strong></p>
         <p>
           <a href="${dashboardUrl}" style="background:#000;color:#fff;padding:12px 24px;text-decoration:none;font-family:sans-serif;font-weight:bold;display:inline-block">
@@ -102,34 +104,26 @@ export async function startGroup(formData: FormData): Promise<StartGroupResult> 
     console.error('Host confirmation email failed:', err);
   }
 
-  // Notify admin
+  // Notify every admin, each with a link to their own dashboard (approve or decline there).
   try {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    const approveUrl = `https://missiontable.org/api/admin/approve?token=${process.env.ADMIN_APPROVE_SECRET}&groupId=${group.id}`;
-
-    await resend.emails.send({
-      from: 'Mission Table <noreply@requesttojoin.missiontable.org>',
-      to: 'projectmissiontable@gmail.com',
-      subject: `New group pending approval: ${groupName}`,
-      html: `
-        <p>A new group has been submitted and is waiting for your approval.</p>
-        <table style="border-collapse:collapse">
-          <tr><td style="padding:4px 16px 4px 0"><strong>Group Name</strong></td><td>${esc(groupName)}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0"><strong>Country</strong></td><td>${esc(countrySlug)}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0"><strong>Host</strong></td><td>${esc(name)}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0"><strong>Host Email</strong></td><td>${esc(email)}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0"><strong>Type</strong></td><td>${esc(groupType)}</td></tr>
-          ${city ? `<tr><td style="padding:4px 16px 4px 0"><strong>Location</strong></td><td>${esc(city)}${state ? `, ${esc(state)}` : ''}</td></tr>` : ''}
-        </table>
-        <br>
-        <a href="${approveUrl}" style="background:#000;color:#fff;padding:12px 24px;text-decoration:none;font-family:sans-serif;font-weight:bold;display:inline-block">
-          Approve This Group →
-        </a>
-        <p style="color:#888;font-size:12px;margin-top:16px">
-          Only click if you've reviewed this submission. The group will go live immediately.
-        </p>
-      `,
-    });
+    const countryName = countries.find((c) => c.slug === countrySlug)?.name ?? countrySlug;
+    const sent = await notifyAdmins(`New group waiting for approval: ${groupName ?? countryName}`, (dashboardUrl) => `
+      <p>A new group was submitted and is waiting for review.</p>
+      <table style="border-collapse:collapse">
+        <tr><td style="padding:4px 16px 4px 0"><strong>Group</strong></td><td>${esc(groupName ?? '(no name)')}</td></tr>
+        <tr><td style="padding:4px 16px 4px 0"><strong>Country</strong></td><td>${esc(countryName)}</td></tr>
+        <tr><td style="padding:4px 16px 4px 0"><strong>Host</strong></td><td>${esc(name)}</td></tr>
+        <tr><td style="padding:4px 16px 4px 0"><strong>Host email</strong></td><td>${esc(email)}</td></tr>
+        <tr><td style="padding:4px 16px 4px 0"><strong>Type</strong></td><td>${esc(groupType)}</td></tr>
+        ${city ? `<tr><td style="padding:4px 16px 4px 0"><strong>Location</strong></td><td>${esc(city)}${state ? `, ${esc(state)}` : ''}</td></tr>` : ''}
+      </table>
+      <br>
+      <a href="${dashboardUrl}" style="background:#000;color:#fff;padding:12px 24px;text-decoration:none;font-family:sans-serif;font-weight:bold;display:inline-block">
+        Review in your admin dashboard →
+      </a>
+      <p style="color:#888;font-size:12px;margin-top:16px">The host was told we usually review within 2 days.</p>
+    `);
+    if (sent === 0) console.error('Admin notification: no email could be sent for group', group.id);
   } catch (err) {
     console.error('Admin notification email failed:', err);
   }
