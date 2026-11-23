@@ -193,13 +193,13 @@ export default function StartGroupForm({ defaultCountry }: { defaultCountry?: st
         <div className="max-w-[640px]">
           <div className="border-2 border-black p-8 md:p-12">
             <p className="font-inter font-semibold text-xs tracking-[0.1em] uppercase text-warm mb-4">
-              Group Registered
+              Request received
             </p>
             <h2 className="font-fraunces font-bold text-[40px] md:text-[48px] uppercase leading-none tracking-[-0.03em] fraunces-64 text-black mb-6">
-              You&apos;re On the Map
+              Thank You
             </h2>
             <p className="font-inter text-base text-warm mb-4">
-              Your request has been received. A Mission Table admin will review and approve your group — once approved, it will appear on the country page you signed up for.
+              A Mission Table admin will review your group, usually within 2 days, and email you as soon as it&apos;s live on the country page. Your private host dashboard link is in your inbox now: you can set up your first meal while you wait.
             </p>
             <p className="font-inter text-sm text-warm mb-8">
               Questions? Email{' '}
@@ -214,7 +214,7 @@ export default function StartGroupForm({ defaultCountry }: { defaultCountry?: st
               href={`/country/${successCountry}`}
               className="block w-full bg-black text-white font-inter font-semibold text-sm tracking-[0.05em] uppercase text-center py-4 border-2 border-black hover:bg-cream hover:text-black transition-colors"
             >
-              View Your Country Page →
+              Back to the Country Page →
             </Link>
           </div>
         </div>
@@ -579,7 +579,7 @@ export default function StartGroupForm({ defaultCountry }: { defaultCountry?: st
         {/* Commitment note */}
         <div className="border-t-2 border-black pt-6 mb-6">
           <p className="font-inter text-sm text-warm">
-            By registering, you&apos;re committing to host ongoing monthly gatherings for the country you selected. Your group will appear on that country&apos;s page immediately.
+            By registering, you&apos;re committing to host ongoing monthly gatherings for the country you selected. A Mission Table admin reviews every new group, usually within 2 days, and emails you when it&apos;s live on that country&apos;s page.
           </p>
         </div>
 

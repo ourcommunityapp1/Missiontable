@@ -43,6 +43,8 @@ type GroupRow = {
   timezone: string;
   max_size: number | null;
   auto_messages: boolean;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
   status: GroupStatus;
   start_date: string;
   end_date: string;
@@ -66,6 +68,8 @@ type GroupInsert = {
   timezone: string;
   max_size?: number | null;
   auto_messages?: boolean;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
   status?: GroupStatus;
   start_date: string;
   end_date: string;
@@ -278,6 +282,9 @@ type GroupChatReadInsert = { group_id: string; reader_id: string; last_read_at?:
 export type MemberAppOpenRow = { group_id: string; member_id: string; first_opened_at: string; last_opened_at: string; opens: number; platform: string | null };
 type MemberAppOpenInsert = Partial<MemberAppOpenRow> & { group_id: string; member_id: string };
 
+export type AdminRow = { id: string; name: string; email: string; admin_token: string; active: boolean; created_at: string; last_seen_at: string | null };
+type AdminInsert = Partial<AdminRow> & { name: string; email: string };
+
 export type Database = {
   public: {
     Tables: {
@@ -351,6 +358,12 @@ export type Database = {
         Row: MemberAppOpenRow;
         Insert: MemberAppOpenInsert;
         Update: Partial<MemberAppOpenInsert>;
+        Relationships: [];
+      };
+      admins: {
+        Row: AdminRow;
+        Insert: AdminInsert;
+        Update: Partial<AdminInsert>;
         Relationships: [];
       };
       chat_reads: {

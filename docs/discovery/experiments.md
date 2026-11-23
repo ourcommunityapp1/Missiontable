@@ -20,6 +20,7 @@ Each experiment states its success threshold **before** it starts. Designs from 
 - **Measurement**: logged by hand in `decisions.md` (count only).
 
 ### E3. Call the waiting host (bet 5)
+- **Correction (2026-11-23)**: the pending group was submitted under the founder's own email. First confirm whether an outside host is behind it.
 - **Method**: Landon calls or emails the Kosovo host this week (call script in product §5); answers the 2 June join requests.
 - **Threshold**: host agrees a first gathering within 60 days; otherwise close the group kindly after 14 days without reply.
 

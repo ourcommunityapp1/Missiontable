@@ -45,9 +45,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | `install_prompt_answered` | Android/desktop Chrome install prompt answered | `group_id`, `outcome` | `group/[id]/MemberApp.tsx` |
 | `group_app_opened` (server) | Member opens the group from their home screen (once per session) | `group_id`, `first_open`, `platform` — distinct_id is the member's `member_token` | `group/[id]/loopActions.ts` |
 | `app_email_sent` (server) | Host emails members who don't have the app | `group_id`, `recipients`, `sent` — distinct_id is the host's `host_token` | `host/[token]/actions.ts` |
+| `group_approved` (server) | An admin approves a pending group (dashboard or legacy link) | `group_id`, `host_emailed` — distinct_id is `admin:<admin id>` (never the admin token) | `admin/[token]/actions.ts` |
+| `group_declined` (server) | An admin declines a pending group | `group_id` — distinct_id `admin:<admin id>` | `admin/[token]/actions.ts` |
+| `admin_added` (server) | An admin adds another admin | `emailed` — distinct_id `admin:<admin id>` | `admin/[token]/actions.ts` |
 | `auto_messages_toggled` (server) | Host turns automatic emails on/off | `group_id`, `on` — distinct_id is the host's `host_token` | `host/[token]/actions.ts` |
 
-`Page View` page_type values: `home`, `browse`, `country`, `group_detail`, `join_group`, `start_group`, `about`, `host_dashboard`, `host_login`, `host_kit_new`, `host_kit_edit`, `host_group_edit`, `host_field_post_new`, `other`
+`Page View` page_type values (paths are recorded with tokens replaced by `:token`): `admin_dashboard`, `home`, `browse`, `country`, `group_detail`, `join_group`, `start_group`, `about`, `host_dashboard`, `host_login`, `host_kit_new`, `host_kit_edit`, `host_group_edit`, `host_field_post_new`, `other`
 
 ### Building the "kit send → group page viewed" funnel
 In Mixpanel, create a Funnel with step 1 = `kit_email_sent` and step 2 = `group_detail_viewed`. Since both events share the member's `member_token` as `distinct_id`, Mixpanel will match them per-member automatically — no query params or manual joins needed.
@@ -87,3 +90,11 @@ In Mixpanel, create a Funnel with step 1 = `kit_email_sent` and step 2 = `group_
 - **Home** (`HomeTab.tsx`): pinned "Are you in?" card, then one feed: chat messages (`ChatPanel` with `feed`) merged by time with group activity from `feed.ts` (field updates, meals sent, who's in, table photos, invitations).
 - **This month** (`MonthTab.tsx`): changes with `phase.ts` (before / day of / week after): gathering + RSVP, your plans (eat together), the meal (`MealCard.tsx`), share your table (`TableShare.tsx`), past meals.
 - Old `?tab=` links still work: field/chat → Home; month/meals/table/together → This month; members → members sheet.
+
+## Admins
+
+- Admins run the platform: approve new groups and help hosts. Table `admins` (migration 010); each admin's private dashboard is `/admin/<admin_token>` (`src/app/admin/[token]/`, logic in `src/lib/admin.ts`). Handbook for admins: `docs/ADMIN.md`.
+- New groups notify every active admin, each with their own dashboard link (`notifyAdmins`). Approving sends the host a "your group is live" email (`approveGroup`); declining hides the group and sends nothing.
+- The legacy `/api/admin/approve?token=ADMIN_APPROVE_SECRET&groupId=` link only shows a confirmation page on GET; approval needs the POST button (email scanners can't approve).
+- The hidden QA test group (`QA_GROUP_ID`) is kept `pending` and shown only under "Test group" on the admin dashboard.
+- Analytics never receive tokens: autocapture and session replay are off, `$current_url`-style properties are blocked, and `Page View` paths are scrubbed (`safePath`). Local/preview builds don't send analytics (`isTestHost`, and `trackServer` skips when `DISABLE_VIEW_TRACKING=1` or Netlify `CONTEXT` isn't production).
